@@ -28,10 +28,10 @@ export interface IStorage {
   updateGameTimeRequest(id: number, status: "approved" | "rejected"): Promise<GameTimeRequest>;
 
   // New methods
-  updateUserGameTime(userId: number, minutes: number): Promise<void>;
+  updateUserGameDays(userId: number, days: number): Promise<void>;
   updateUserCoins(userId: number, amount: number): Promise<void>;
-  purchaseGameTime(childId: number, minutes: number, coinsSpent: number): Promise<GameTimePurchase>;
-  getGameTimeBalance(userId: number): Promise<number>;
+  purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase>;
+  getGameDayBalance(userId: number): Promise<number>;
   getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]>;
 }
 
@@ -147,11 +147,11 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async updateUserGameTime(userId: number, minutes: number): Promise<void> {
+  async updateUserGameDays(userId: number, days: number): Promise<void> {
     await db
       .update(users)
       .set({
-        gameTimeBalance: minutes,
+        gameDayBalance: days,
       })
       .where(eq(users.id, userId));
   }
@@ -165,13 +165,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async purchaseGameTime(childId: number, minutes: number, coinsSpent: number): Promise<GameTimePurchase> {
+  async purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase> {
     const [purchase] = await db.transaction(async (tx) => {
       // Get current balance
       const [user] = await tx
         .select({
           coinBalance: users.coinBalance,
-          gameTimeBalance: users.gameTimeBalance,
+          gameDayBalance: users.gameDayBalance,
         })
         .from(users)
         .where(eq(users.id, childId));
@@ -182,7 +182,7 @@ export class DatabaseStorage implements IStorage {
 
       const currentBalance = user.coinBalance || 0;
       if (currentBalance < coinsSpent) {
-        throw new Error(`Insufficient coins. Required: ${coinsSpent}, Available: ${currentBalance}`);
+        throw new Error(`코인이 부족합니다. 필요: ${coinsSpent}, 보유: ${currentBalance}`);
       }
 
       // Update balances
@@ -190,7 +190,7 @@ export class DatabaseStorage implements IStorage {
         .update(users)
         .set({
           coinBalance: currentBalance - coinsSpent,
-          gameTimeBalance: (user.gameTimeBalance || 0) + minutes,
+          gameDayBalance: (user.gameDayBalance || 0) + days,
         })
         .where(eq(users.id, childId));
 
@@ -199,7 +199,7 @@ export class DatabaseStorage implements IStorage {
         .insert(gameTimePurchases)
         .values({
           childId,
-          minutes,
+          days,
           coinsSpent,
         })
         .returning();
@@ -210,12 +210,12 @@ export class DatabaseStorage implements IStorage {
     return purchase;
   }
 
-  async getGameTimeBalance(userId: number): Promise<number> {
+  async getGameDayBalance(userId: number): Promise<number> {
     const [user] = await db
-      .select({ gameTimeBalance: users.gameTimeBalance })
+      .select({ gameDayBalance: users.gameDayBalance })
       .from(users)
       .where(eq(users.id, userId));
-    return user?.gameTimeBalance || 0;
+    return user?.gameDayBalance || 0;
   }
 
   async getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]> {

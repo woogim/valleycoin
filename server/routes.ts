@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/coins/balance/:userId", isAuthenticated, async (req, res) => {
     const balance = await storage.getCoinBalance(parseInt(req.params.userId));
-    console.log(`Coin balance for user ${req.params.userId}:`, balance); // Add logging
+    console.log(`Coin balance for user ${req.params.userId}:`, balance);
     res.json({ balance });
   });
 
@@ -93,8 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game time purchase routes
   app.post("/api/game-time/purchase", isAuthenticated, async (req, res) => {
     try {
-      const { minutes, coinsSpent } = req.body;
-      const purchase = await storage.purchaseGameTime(req.user!.id, minutes, coinsSpent);
+      const { days, coinsSpent } = req.body;
+      const purchase = await storage.purchaseGameDays(req.user!.id, days, coinsSpent);
       notifyUser(req.user!.id, { type: "GAME_TIME_PURCHASED", purchase });
       res.json(purchase);
     } catch (error) {
@@ -103,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/game-time/balance/:userId", isAuthenticated, async (req, res) => {
-    const balance = await storage.getGameTimeBalance(parseInt(req.params.userId));
+    const balance = await storage.getGameDayBalance(parseInt(req.params.userId));
     res.json({ balance });
   });
 

@@ -30,8 +30,8 @@ export default function ParentDashboard() {
     if (data.type === "NEW_GAME_TIME_REQUEST") {
       queryClient.invalidateQueries({ queryKey: [`/api/game-time/requests/${user?.id}`] });
       toast({
-        title: "새로운 게임 시간 요청",
-        description: "자녀가 게임 시간을 요청했습니다",
+        title: "새로운 게임 일수 요청",
+        description: "자녀가 게임 일수를 요청했습니다",
       });
     }
   });
@@ -170,7 +170,7 @@ export default function ParentDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>게임 시간 요청</CardTitle>
+              <CardTitle>게임 일수 요청</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -179,7 +179,7 @@ export default function ParentDashboard() {
                     <p className="font-medium mb-2">
                       {children?.find((child: any) => child.id === request.childId)?.username}님의 요청
                     </p>
-                    <p>요청 시간: {request.minutes}분</p>
+                    <p>요청 일수: {request.days}일</p>
                     <p className="text-sm text-muted-foreground">
                       요청 시각: {new Date(request.createdAt).toLocaleString()}
                     </p>

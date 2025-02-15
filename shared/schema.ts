@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: ["parent", "child"] }).notNull(),
   parentId: integer("parent_id").references(() => users.id),
-  gameTimeBalance: integer("game_time_balance").notNull().default(0),
+  gameDayBalance: integer("game_day_balance").notNull().default(0),
   coinBalance: integer("coin_balance").notNull().default(0),
 });
 
@@ -24,7 +24,7 @@ export const gameTimeRequests = pgTable("game_time_requests", {
   id: serial("id").primaryKey(),
   childId: integer("child_id").references(() => users.id).notNull(),
   parentId: integer("parent_id").references(() => users.id),
-  minutes: integer("minutes").notNull(),
+  days: integer("days").notNull(),
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -32,7 +32,7 @@ export const gameTimeRequests = pgTable("game_time_requests", {
 export const gameTimePurchases = pgTable("game_time_purchases", {
   id: serial("id").primaryKey(),
   childId: integer("child_id").references(() => users.id).notNull(),
-  minutes: integer("minutes").notNull(),
+  days: integer("days").notNull(),
   coinsSpent: integer("coins_spent").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -43,11 +43,11 @@ export const insertCoinSchema = createInsertSchema(coins);
 export const insertGameTimeRequestSchema = createInsertSchema(gameTimeRequests).pick({
   childId: true,
   parentId: true,
-  minutes: true,
+  days: true,
 });
 export const insertGameTimePurchaseSchema = createInsertSchema(gameTimePurchases).pick({
   childId: true,
-  minutes: true,
+  days: true,
   coinsSpent: true,
 });
 
