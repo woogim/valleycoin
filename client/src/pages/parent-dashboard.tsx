@@ -5,11 +5,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { GameTimeRequest, DeleteRequest } from "@shared/schema";
-import { Coins, Clock, UserX, LogOut } from "lucide-react";
+import { GameTimeRequest, DeleteRequest, Coin } from "@shared/schema";
+import { Coins, Clock, UserX, LogOut, Pencil, Trash } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
+
+type CoinHistoryItem = Coin & {
+  username: string;
+};
 
 export default function ParentDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -17,6 +22,9 @@ export default function ParentDashboard() {
   const [coinAmount, setCoinAmount] = useState("");
   const [reason, setReason] = useState("");
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [editingCoin, setEditingCoin] = useState<Coin | null>(null);
+  const [editReason, setEditReason] = useState("");
+  const [editAmount, setEditAmount] = useState("");
 
   const { data: children } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
@@ -30,6 +38,11 @@ export default function ParentDashboard() {
 
   const { data: deleteRequests } = useQuery<DeleteRequest[]>({
     queryKey: [`/api/delete-requests/${user?.id}`],
+    enabled: !!user?.id,
+  });
+
+  const { data: coinHistory } = useQuery<CoinHistoryItem[]>({
+    queryKey: [`/api/coins/parent-history/${user?.id}`],
     enabled: !!user?.id,
   });
 
@@ -111,6 +124,49 @@ export default function ParentDashboard() {
     },
   });
 
+  const updateCoinMutation = useMutation({
+    mutationFn: async ({ coinId, reason, amount }: { coinId: number; reason: string; amount: string }) => {
+      await apiRequest("PATCH", `/api/coins/${coinId}`, { reason, amount });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/parent-history/${user?.id}`] });
+      setEditingCoin(null);
+      setEditReason("");
+      setEditAmount("");
+      toast({
+        title: "성공",
+        description: "코인 내역이 수정되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCoinMutation = useMutation({
+    mutationFn: async (coinId: number) => {
+      await apiRequest("DELETE", `/api/coins/${coinId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/parent-history/${user?.id}`] });
+      toast({
+        title: "성공",
+        description: "코인 내역이 삭제되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user) return null;
 
   return (
@@ -123,9 +179,9 @@ export default function ParentDashboard() {
               <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
               <div className="flex gap-2">
                 <SettingsDialog />
-                <Button 
-                  variant="outline" 
-                  onClick={() => logoutMutation.mutate()} 
+                <Button
+                  variant="outline"
+                  onClick={() => logoutMutation.mutate()}
                   className="flex items-center gap-2 border-2 border-[#b58d3c] hover:bg-[#f0d499]"
                 >
                   <LogOut className="w-4 h-4" />
@@ -156,7 +212,7 @@ export default function ParentDashboard() {
                   <div className="space-y-4">
                     <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
                       <label className="block text-lg font-bold text-[#5c4a21] mb-2">자녀 선택</label>
-                      <select 
+                      <select
                         className="w-full border-2 border-[#b58d3c] rounded-md p-2 bg-[#fdf6e3] text-[#5c4a21]"
                         value={selectedChildId || ""}
                         onChange={(e) => setSelectedChildId(e.target.value ? parseInt(e.target.value) : null)}
@@ -234,6 +290,73 @@ export default function ParentDashboard() {
             </div>
 
             <div className="space-y-6">
+              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
+                <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                  <div className="flex items-center gap-3">
+                    <Coins className="w-8 h-8 text-[#b58d3c]" />
+                    <div>
+                      <CardTitle className="text-2xl text-[#5c4a21]">코인 지급 내역</CardTitle>
+                      <CardDescription className="text-[#8b6b35]">
+                        자녀들에게 지급한 코인 내역을 관리합니다
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    {coinHistory?.map((coin) => (
+                      <div key={coin.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <p className="text-lg font-bold text-[#5c4a21]">{coin.username}</p>
+                            <p className="text-sm text-[#8b6b35]">{coin.reason}</p>
+                            <p className="text-sm text-[#8b6b35]">
+                              {new Date(coin.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <span className={`font-bold ${coin.amount.startsWith('-') ? "text-red-700" : "text-green-700"}`}>
+                            {!coin.amount.startsWith('-') ? "+" : ""}{coin.amount} 밸리코인
+                          </span>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            onClick={() => {
+                              setEditingCoin(coin);
+                              setEditReason(coin.reason);
+                              setEditAmount(coin.amount);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            onClick={() => {
+                              if (confirm("정말로 이 코인 내역을 삭제하시겠습니까?")) {
+                                deleteCoinMutation.mutate(coin.id);
+                              }
+                            }}
+                          >
+                            <Trash className="w-4 h-4" />
+                            삭제
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {(!coinHistory || coinHistory.length === 0) && (
+                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
+                        코인 지급 내역이 없습니다
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
                 <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
                   <div className="flex items-center gap-3">
@@ -351,6 +474,58 @@ export default function ParentDashboard() {
           </div>
         </main>
       </div>
+
+      {/* Edit Coin Dialog */}
+      <Dialog open={!!editingCoin} onOpenChange={(open) => !open && setEditingCoin(null)}>
+        <DialogContent className="bg-[#faf1d6] border-4 border-[#b58d3c]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-[#5c4a21]">코인 내역 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 p-4">
+            <div>
+              <label className="block text-sm font-bold text-[#5c4a21] mb-2">지급 사유</label>
+              <Input
+                value={editReason}
+                onChange={(e) => setEditReason(e.target.value)}
+                className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-[#5c4a21] mb-2">코인 수량</label>
+              <Input
+                type="number"
+                step="0.01"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
+              />
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setEditingCoin(null)}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={() => {
+                  if (editingCoin) {
+                    updateCoinMutation.mutate({
+                      coinId: editingCoin.id,
+                      reason: editReason,
+                      amount: editAmount,
+                    });
+                  }
+                }}
+                disabled={updateCoinMutation.isPending}
+                className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white"
+              >
+                저장
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

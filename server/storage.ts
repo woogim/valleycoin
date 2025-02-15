@@ -1,7 +1,7 @@
 import session from "express-session";
 import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
@@ -21,6 +21,10 @@ export interface IStorage {
   getCoinBalance(userId: number): Promise<number>;
   addCoins(coin: InsertCoin): Promise<Coin>;
   getCoinHistory(userId: number): Promise<Coin[]>;
+  getParentCoinHistory(childIds: number[]): Promise<(Coin & { username: string })[]>;
+  updateCoin(coinId: number, update: { reason: string; amount: string }): Promise<Coin>;
+  getCoin(coinId: number): Promise<Coin>;
+  deleteCoin(coinId: number): Promise<void>;
 
   // Game time operations
   createGameTimeRequest(request: InsertGameTimeRequest): Promise<GameTimeRequest>;
@@ -276,6 +280,122 @@ export class DatabaseStorage implements IStorage {
       .from(deleteRequests)
       .where(eq(deleteRequests.parentId, parentId))
       .orderBy(deleteRequests.createdAt);
+  }
+
+  async getParentCoinHistory(childIds: number[]): Promise<(Coin & { username: string })[]> {
+    if (!childIds.length) return [];
+
+    return await db
+      .select({
+        ...coins,
+        username: users.username,
+      })
+      .from(coins)
+      .leftJoin(users, eq(coins.userId, users.id))
+      .where(sql`${coins.userId} = ANY(${childIds})`)
+      .orderBy(coins.createdAt);
+  }
+
+  async getCoin(coinId: number): Promise<Coin> {
+    const [coin] = await db
+      .select()
+      .from(coins)
+      .where(eq(coins.id, coinId));
+
+    if (!coin) {
+      throw new Error("코인 내역을 찾을 수 없습니다");
+    }
+
+    return coin;
+  }
+
+  async updateCoin(coinId: number, update: { reason: string; amount: string }): Promise<Coin> {
+    const [coin] = await db.transaction(async (tx) => {
+      // 기존 코인 내역 조회
+      const [oldCoin] = await tx
+        .select()
+        .from(coins)
+        .where(eq(coins.id, coinId));
+
+      if (!oldCoin) {
+        throw new Error("코인 내역을 찾을 수 없습니다");
+      }
+
+      // 금액 변경분 계산
+      const oldAmount = parseFloat(oldCoin.amount);
+      const newAmount = parseFloat(update.amount);
+      const amountDiff = newAmount - oldAmount;
+
+      // 사용자의 현재 잔액 조회
+      const [user] = await tx
+        .select({
+          coinBalance: users.coinBalance,
+        })
+        .from(users)
+        .where(eq(users.id, oldCoin.userId));
+
+      const currentBalance = parseFloat(user?.coinBalance?.toString() || "0");
+
+      // 사용자 잔액 업데이트
+      await tx
+        .update(users)
+        .set({
+          coinBalance: (currentBalance + amountDiff).toFixed(2),
+        })
+        .where(eq(users.id, oldCoin.userId));
+
+      // 코인 내역 업데이트
+      const [updatedCoin] = await tx
+        .update(coins)
+        .set({
+          reason: update.reason,
+          amount: update.amount,
+        })
+        .where(eq(coins.id, coinId))
+        .returning();
+
+      return [updatedCoin];
+    });
+
+    return coin;
+  }
+
+  async deleteCoin(coinId: number): Promise<void> {
+    await db.transaction(async (tx) => {
+      // 기존 코인 내역 조회
+      const [coin] = await tx
+        .select()
+        .from(coins)
+        .where(eq(coins.id, coinId));
+
+      if (!coin) {
+        throw new Error("코인 내역을 찾을 수 없습니다");
+      }
+
+      // 사용자의 현재 잔액 조회
+      const [user] = await tx
+        .select({
+          coinBalance: users.coinBalance,
+        })
+        .from(users)
+        .where(eq(users.id, coin.userId));
+
+      const currentBalance = parseFloat(user?.coinBalance?.toString() || "0");
+      const coinAmount = parseFloat(coin.amount);
+
+      // 사용자 잔액에서 코인 차감
+      await tx
+        .update(users)
+        .set({
+          coinBalance: (currentBalance - coinAmount).toFixed(2),
+        })
+        .where(eq(users.id, coin.userId));
+
+      // 코인 내역 삭제
+      await tx
+        .delete(coins)
+        .where(eq(coins.id, coinId));
+    });
   }
 }
 

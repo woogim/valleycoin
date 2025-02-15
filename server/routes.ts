@@ -210,6 +210,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New route for getting coin history by parent
+  app.get("/api/coins/parent-history/:parentId", isAuthenticated, async (req, res) => {
+    try {
+      const children = await storage.getChildren(parseInt(req.params.parentId));
+      const childIds = children.map((child: any) => child.id);
+      const history = await storage.getParentCoinHistory(childIds);
+      res.json(history);
+    } catch (error) {
+      console.error("Error getting parent coin history:", error);
+      res.status(400).json({ message: "코인 내역 조회에 실패했습니다." });
+    }
+  });
+
+  // Update coin history
+  app.patch("/api/coins/:coinId", isAuthenticated, async (req, res) => {
+    try {
+      const { reason, amount } = req.body;
+      const numAmount = Number(amount);
+      if (isNaN(numAmount)) {
+        throw new Error("Invalid amount format");
+      }
+      const decimalAmount = numAmount.toFixed(2);
+      const coin = await storage.updateCoin(parseInt(req.params.coinId), {
+        reason,
+        amount: decimalAmount,
+      });
+      notifyUser(coin.userId, { type: "COIN_UPDATE", coin });
+      res.json(coin);
+    } catch (error) {
+      console.error("Error updating coin:", error);
+      res.status(400).json({ message: "코인 내역 수정에 실패했습니다." });
+    }
+  });
+
+  // Delete coin history
+  app.delete("/api/coins/:coinId", isAuthenticated, async (req, res) => {
+    try {
+      const coin = await storage.getCoin(parseInt(req.params.coinId));
+      await storage.deleteCoin(parseInt(req.params.coinId));
+      notifyUser(coin.userId, { type: "COIN_UPDATE" });
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Error deleting coin:", error);
+      res.status(400).json({ message: "코인 내역 삭제에 실패했습니다." });
+    }
+  });
+
+
   // Game time request routes
   app.post("/api/game-time/request", isAuthenticated, async (req, res) => {
     const request = await storage.createGameTimeRequest(req.body);
