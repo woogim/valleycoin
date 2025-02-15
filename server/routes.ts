@@ -14,6 +14,7 @@ function isAuthenticated(req: Express.Request, res: Express.Response, next: Expr
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
+  // 로깅 미들웨어
   app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;
@@ -45,20 +46,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
 
   const clients = new Map<number, WebSocket>();
 
   wss.on("connection", (ws, req) => {
-    if (!req.url) return;
-    const userId = parseInt(req.url.split("?userId=")[1]);
-    if (isNaN(userId)) return;
+    console.log("[WebSocket] New connection attempt");
+    if (!req.url) {
+      console.log("[WebSocket] No URL provided");
+      return;
+    }
 
+    const userId = parseInt(req.url.split("?userId=")[1]);
+    if (isNaN(userId)) {
+      console.log("[WebSocket] Invalid userId");
+      return;
+    }
+
+    console.log(`[WebSocket] Client connected for userId: ${userId}`);
     clients.set(userId, ws);
 
     ws.on("close", () => {
+      console.log(`[WebSocket] Client disconnected for userId: ${userId}`);
       clients.delete(userId);
     });
   });
@@ -66,7 +76,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function notifyUser(userId: number, data: any) {
     const client = clients.get(userId);
     if (client?.readyState === WebSocket.OPEN) {
+      console.log(`[WebSocket] Sending notification to userId: ${userId}`, data);
       client.send(JSON.stringify(data));
+    } else {
+      console.log(`[WebSocket] Client not available for userId: ${userId}`);
     }
   }
 
@@ -129,14 +142,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const purchase = await storage.purchaseGameDays(req.user!.id, days, coinsSpent);
       notifyUser(req.user!.id, { type: "GAME_TIME_PURCHASED", purchase });
       res.json(purchase);
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({ message: error.message });
     }
-  });
-
-  app.get("/api/game-time/balance/:userId", isAuthenticated, async (req, res) => {
-    const balance = await storage.getGameDayBalance(parseInt(req.params.userId));
-    res.json({ balance });
   });
 
   app.get("/api/game-time/purchases/:userId", isAuthenticated, async (req, res) => {
