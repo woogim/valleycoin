@@ -28,10 +28,8 @@ export interface IStorage {
   updateGameTimeRequest(id: number, status: "approved" | "rejected"): Promise<GameTimeRequest>;
 
   // New methods
-  updateUserGameDays(userId: number, days: number): Promise<void>;
   updateUserCoins(userId: number, amount: number): Promise<void>;
   purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase>;
-  getGameDayBalance(userId: number): Promise<number>;
   getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]>;
 }
 
@@ -147,15 +145,6 @@ export class DatabaseStorage implements IStorage {
     return request;
   }
 
-  async updateUserGameDays(userId: number, days: number): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        gameDayBalance: days,
-      })
-      .where(eq(users.id, userId));
-  }
-
   async updateUserCoins(userId: number, amount: number): Promise<void> {
     await db
       .update(users)
@@ -171,7 +160,6 @@ export class DatabaseStorage implements IStorage {
       const [user] = await tx
         .select({
           coinBalance: users.coinBalance,
-          gameDayBalance: users.gameDayBalance,
         })
         .from(users)
         .where(eq(users.id, childId));
@@ -185,12 +173,11 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`코인이 부족합니다. 필요: ${coinsSpent}, 보유: ${currentBalance}`);
       }
 
-      // Update balances
+      // Update balance
       await tx
         .update(users)
         .set({
           coinBalance: currentBalance - coinsSpent,
-          gameDayBalance: (user.gameDayBalance || 0) + days,
         })
         .where(eq(users.id, childId));
 
@@ -208,14 +195,6 @@ export class DatabaseStorage implements IStorage {
     });
 
     return purchase;
-  }
-
-  async getGameDayBalance(userId: number): Promise<number> {
-    const [user] = await db
-      .select({ gameDayBalance: users.gameDayBalance })
-      .from(users)
-      .where(eq(users.id, userId));
-    return user?.gameDayBalance || 0;
   }
 
   async getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]> {

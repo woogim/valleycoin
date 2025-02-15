@@ -8,7 +8,6 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: ["parent", "child"] }).notNull(),
   parentId: integer("parent_id").references(() => users.id),
-  gameDayBalance: integer("game_day_balance").notNull().default(0),
   coinBalance: integer("coin_balance").notNull().default(0),
 });
 

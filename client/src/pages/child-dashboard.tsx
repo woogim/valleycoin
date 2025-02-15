@@ -24,10 +24,6 @@ export default function ChildDashboard() {
     enabled: !!user?.id,
   });
 
-  const { data: gameDayBalance } = useQuery<Balance>({
-    queryKey: [`/api/game-time/balance/${user?.id}`],
-    enabled: !!user?.id,
-  });
 
   const { data: history } = useQuery<Coin[]>({
     queryKey: [`/api/coins/history/${user?.id}`],
@@ -53,11 +49,10 @@ export default function ChildDashboard() {
         description: `요청이 ${data.request.status === 'approved' ? '승인' : '거절'}되었습니다`,
       });
     } else if (data.type === "GAME_TIME_PURCHASED") {
-      queryClient.invalidateQueries({ queryKey: [`/api/game-time/balance/${user?.id}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/game-time/purchases/${user?.id}`] });
       toast({
         title: "게임 일수 구매",
-        description: `${data.purchase.days}일의 게임 시간을 구매했습니다`,
+        description: `${data.purchase.days}일의 게임을 구매했습니다`,
       });
     }
   });
@@ -128,14 +123,10 @@ export default function ChildDashboard() {
         <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>게임 일수</CardTitle>
+              <CardTitle>게임 일수 구매/요청</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <p className="text-lg font-medium">남은 일수</p>
-                  <p className="text-4xl font-bold">{gameDayBalance?.balance || 0}일</p>
-                </div>
                 <div>
                   <p className="text-lg font-medium mb-2">코인으로 구매</p>
                   <div className="flex gap-2">
@@ -232,7 +223,7 @@ export default function ChildDashboard() {
               <div className="space-y-2">
                 {purchases?.map((purchase: GameTimePurchase) => (
                   <div key={purchase.id} className="flex justify-between items-center">
-                    <span>{purchase.days}일</span>
+                    <span>{purchase.days}일 구매</span>
                     <span className="text-red-600">-{purchase.coinsSpent}코인</span>
                   </div>
                 ))}
