@@ -296,9 +296,10 @@ export class DatabaseStorage implements IStorage {
       })
       .from(coins)
       .leftJoin(users, eq(coins.userId, users.id))
-      .where(sql`${coins.userId} IN (${sql.join(childIds)})`)
+      .where(sql`${coins.userId} IN (${sql.join(childIds, ', ')})`)
       .orderBy(sql`${coins.createdAt} DESC`);
 
+    console.log('Parent coin history query result:', history);
     return history;
   }
 

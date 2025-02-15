@@ -214,8 +214,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/coins/parent-history/:parentId", isAuthenticated, async (req, res) => {
     try {
       const children = await storage.getChildren(parseInt(req.params.parentId));
+      console.log('Found children:', children);
       const childIds = children.map((child: any) => child.id);
+      console.log('Child IDs:', childIds);
       const history = await storage.getParentCoinHistory(childIds);
+      console.log('Parent coin history:', history);
       res.json(history);
     } catch (error) {
       console.error("Error getting parent coin history:", error);
