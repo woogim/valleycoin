@@ -37,7 +37,6 @@ export default function AuthPage() {
     }
   });
 
-  // Handle redirection after authentication
   if (user) {
     setLocation(user.role === "parent" ? "/parent-dashboard" : "/child-dashboard");
     return null;
@@ -48,22 +47,22 @@ export default function AuthPage() {
       <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
         <div className="space-y-6">
           <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold">Game Time Manager</h1>
+            <h1 className="text-3xl font-bold">밸리코인 대시보드</h1>
             <p className="text-muted-foreground">
-              Manage your children's game time and rewards
+              자녀의 게임 시간을 효과적으로 관리하세요
             </p>
           </div>
 
           <Tabs defaultValue="login" className="space-y-4">
             <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">로그인</TabsTrigger>
+              <TabsTrigger value="register">회원가입</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <Card>
                 <CardHeader>
-                  <CardTitle>Login to your account</CardTitle>
+                  <CardTitle>로그인</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Form {...loginForm}>
@@ -73,7 +72,7 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>아이디</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -86,7 +85,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>비밀번호</FormLabel>
                             <FormControl>
                               <Input type="password" {...field} />
                             </FormControl>
@@ -95,7 +94,7 @@ export default function AuthPage() {
                         )}
                       />
                       <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                        {loginMutation.isPending ? "Logging in..." : "Login"}
+                        {loginMutation.isPending ? "로그인 중..." : "로그인"}
                       </Button>
                     </form>
                   </Form>
@@ -106,7 +105,7 @@ export default function AuthPage() {
             <TabsContent value="register">
               <Card>
                 <CardHeader>
-                  <CardTitle>Create an account</CardTitle>
+                  <CardTitle>회원가입</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Form {...registerForm}>
@@ -116,7 +115,7 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>아이디</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -129,7 +128,7 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel>비밀번호</FormLabel>
                             <FormControl>
                               <Input type="password" {...field} />
                             </FormControl>
@@ -142,19 +141,19 @@ export default function AuthPage() {
                         name="role"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Role</FormLabel>
+                            <FormLabel>회원 유형</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Select a role" />
+                                  <SelectValue placeholder="회원 유형을 선택하세요" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="parent">Parent</SelectItem>
-                                <SelectItem value="child">Child</SelectItem>
+                                <SelectItem value="parent">부모님</SelectItem>
+                                <SelectItem value="child">자녀</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -167,14 +166,14 @@ export default function AuthPage() {
                           name="parentId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Parent</FormLabel>
+                              <FormLabel>부모님 계정</FormLabel>
                               <Select
                                 onValueChange={(value) => field.onChange(parseInt(value))}
                                 defaultValue={field.value?.toString()}
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select a parent" />
+                                    <SelectValue placeholder="부모님 계정을 선택하세요" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -191,7 +190,7 @@ export default function AuthPage() {
                         />
                       )}
                       <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                        {registerMutation.isPending ? "Creating account..." : "Create account"}
+                        {registerMutation.isPending ? "계정 생성 중..." : "계정 생성"}
                       </Button>
                     </form>
                   </Form>
@@ -204,10 +203,10 @@ export default function AuthPage() {
         <div className="hidden md:block">
           <div className="rounded-lg bg-muted p-8 h-full flex items-center justify-center">
             <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold">Welcome to Game Time Manager</h2>
+              <h2 className="text-2xl font-bold">밸리코인 대시보드에 오신 것을 환영합니다</h2>
               <p className="text-muted-foreground">
-                A safe and fun way to manage your children's gaming activities.
-                Track game time, reward good behavior, and maintain a healthy balance.
+                자녀의 게임 시간을 안전하고 재미있게 관리하세요.
+                밸리코인으로 게임 시간을 관리하고, 좋은 행동에 대한 보상을 제공하세요.
               </p>
             </div>
           </div>

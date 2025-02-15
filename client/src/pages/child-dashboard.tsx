@@ -117,7 +117,7 @@ export default function ChildDashboard() {
         <header className="border-b">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">자녀 대시보드</h1>
+              <h1 className="text-3xl font-bold">밸리코인 대시보드</h1>
               <Button variant="outline" onClick={() => logoutMutation.mutate()} className="flex items-center gap-2">
                 <LogOut className="w-4 h-4" />
                 로그아웃
@@ -134,13 +134,13 @@ export default function ChildDashboard() {
                 <CardHeader>
                   <div className="flex items-center gap-2">
                     <Coins className="w-5 h-5 text-primary" />
-                    <CardTitle>보유 코인</CardTitle>
+                    <CardTitle>보유 밸리코인</CardTitle>
                   </div>
-                  <CardDescription>현재 보유한 코인으로 게임 시간을 구매할 수 있습니다</CardDescription>
+                  <CardDescription>현재 보유한 밸리코인으로 게임 시간을 구매할 수 있습니다</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="text-4xl font-bold text-primary mb-4">
-                    {balance?.balance || 0} 코인
+                    {balance?.balance || 0} 밸리코인
                   </div>
                 </CardContent>
               </Card>
@@ -151,12 +151,12 @@ export default function ChildDashboard() {
                     <Clock className="w-5 h-5 text-primary" />
                     <CardTitle>게임 시간 관리</CardTitle>
                   </div>
-                  <CardDescription>코인으로 게임 시간을 구매하거나 부모님께 요청할 수 있습니다</CardDescription>
+                  <CardDescription>밸리코인으로 게임 시간을 구매하거나 부모님께 요청할 수 있습니다</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-sm font-medium mb-2">코인으로 구매</h3>
+                      <h3 className="text-sm font-medium mb-2">밸리코인으로 구매</h3>
                       <div className="flex gap-2">
                         <Input
                           type="number"
@@ -179,8 +179,8 @@ export default function ChildDashboard() {
                             const coinsRequired = days;
                             if (balance?.balance < coinsRequired) {
                               toast({
-                                title: "코인 부족",
-                                description: `${coinsRequired}코인이 필요합니다`,
+                                title: "밸리코인 부족",
+                                description: `${coinsRequired}밸리코인이 필요합니다`,
                                 variant: "destructive",
                               });
                               return;
@@ -189,7 +189,7 @@ export default function ChildDashboard() {
                           }}
                           disabled={purchaseGameDaysMutation.isPending}
                         >
-                          구매 (1코인/일)
+                          구매 (1밸리코인/일)
                         </Button>
                       </div>
                     </div>
@@ -235,19 +235,19 @@ export default function ChildDashboard() {
                     <History className="w-5 h-5 text-primary" />
                     <CardTitle>활동 내역</CardTitle>
                   </div>
-                  <CardDescription>코인 획득/사용 및 게임 시간 구매 내역</CardDescription>
+                  <CardDescription>밸리코인 획득/사용 및 게임 시간 구매 내역</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-sm font-medium mb-3">코인 내역</h3>
+                      <h3 className="text-sm font-medium mb-3">밸리코인 내역</h3>
                       <div className="space-y-2 max-h-[200px] overflow-y-auto">
                         {history?.map((coin: Coin) => (
                           <div key={coin.id} className="flex flex-col bg-muted rounded-lg p-3">
                             <div className="flex justify-between items-center">
                               <span className="font-medium">{coin.reason}</span>
                               <span className={`font-bold ${coin.amount > 0 ? "text-green-600" : "text-red-600"}`}>
-                                {coin.amount > 0 ? "+" : ""}{coin.amount}
+                                {coin.amount > 0 ? "+" : ""}{coin.amount}밸리코인
                               </span>
                             </div>
                             <span className="text-sm text-muted-foreground">
@@ -265,7 +265,7 @@ export default function ChildDashboard() {
                           <div key={purchase.id} className="flex flex-col bg-muted rounded-lg p-3">
                             <div className="flex justify-between items-center">
                               <span className="font-medium">{purchase.days}일 구매</span>
-                              <span className="font-bold text-red-600">-{purchase.coinsSpent}코인</span>
+                              <span className="font-bold text-red-600">-{purchase.coinsSpent}밸리코인</span>
                             </div>
                             <span className="text-sm text-muted-foreground">
                               {new Date(purchase.createdAt).toLocaleString()}

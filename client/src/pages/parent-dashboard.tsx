@@ -47,7 +47,7 @@ export default function ParentDashboard() {
       setReason("");
       toast({
         title: "성공",
-        description: "코인이 추가되었습니다",
+        description: "밸리코인이 지급되었습니다",
       });
     },
     onError: (error: Error) => {
@@ -88,7 +88,7 @@ export default function ParentDashboard() {
         <header className="border-b">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">부모 대시보드</h1>
+              <h1 className="text-3xl font-bold">밸리코인 대시보드</h1>
               <Button variant="outline" onClick={() => logoutMutation.mutate()} className="flex items-center gap-2">
                 <LogOut className="w-4 h-4" />
                 로그아웃
@@ -104,9 +104,9 @@ export default function ParentDashboard() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <Coins className="w-5 h-5 text-primary" />
-                  <CardTitle>코인 지급</CardTitle>
+                  <CardTitle>밸리코인 지급</CardTitle>
                 </div>
-                <CardDescription>자녀에게 보상으로 코인을 지급합니다</CardDescription>
+                <CardDescription>자녀에게 보상으로 밸리코인을 지급합니다</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -126,12 +126,12 @@ export default function ParentDashboard() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">코인 수량</label>
+                    <label className="block text-sm font-medium mb-1">밸리코인 수량</label>
                     <Input
                       type="number"
                       value={coinAmount}
                       onChange={(e) => setCoinAmount(e.target.value)}
-                      placeholder="지급할 코인 수량 입력"
+                      placeholder="지급할 밸리코인 수량 입력"
                       className="w-full"
                     />
                   </div>
@@ -159,7 +159,7 @@ export default function ParentDashboard() {
                       if (isNaN(amount) || amount <= 0) {
                         toast({
                           title: "오류",
-                          description: "올바른 코인 수량을 입력해주세요",
+                          description: "올바른 밸리코인 수량을 입력해주세요",
                           variant: "destructive",
                         });
                         return;
@@ -180,7 +180,7 @@ export default function ParentDashboard() {
                     }}
                     disabled={addCoinsMutation.isPending}
                   >
-                    {addCoinsMutation.isPending ? "처리 중..." : "코인 지급"}
+                    {addCoinsMutation.isPending ? "처리 중..." : "밸리코인 지급"}
                   </Button>
                 </div>
               </CardContent>
