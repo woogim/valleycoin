@@ -15,6 +15,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getChildren(parentId: number): Promise<User[]>;
+  getParents(): Promise<User[]>;
 
   // Coin operations
   getCoinBalance(userId: number): Promise<number>;
@@ -32,7 +33,7 @@ export class DatabaseStorage implements IStorage {
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
-      pool: db.client,
+      pool: db.$client,
       createTableIfMissing: true,
     });
   }
@@ -50,6 +51,13 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
+  }
+
+  async getParents(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, "parent"));
   }
 
   async getChildren(parentId: number): Promise<User[]> {

@@ -9,15 +9,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (user) {
-    setLocation(user.role === "parent" ? "/parent-dashboard" : "/child-dashboard");
-    return null;
-  }
+  const { data: parents } = useQuery({
+    queryKey: ["/api/parents"],
+    enabled: false,
+  });
 
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema.pick({ username: true, password: true })),
@@ -25,7 +26,16 @@ export default function AuthPage() {
 
   const registerForm = useForm({
     resolver: zodResolver(insertUserSchema),
+    defaultValues: {
+      role: "parent"
+    }
   });
+
+  // Handle redirection after authentication
+  if (user) {
+    setLocation(user.role === "parent" ? "/parent-dashboard" : "/child-dashboard");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -127,7 +137,19 @@ export default function AuthPage() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Role</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                if (value === "child") {
+                                  // Only fetch parents when role is child
+                                  registerForm.setValue("parentId", undefined);
+                                  registerForm.setValue("parentId", undefined);
+                                } else {
+                                  registerForm.setValue("parentId", undefined);
+                                }
+                              }}
+                              defaultValue={field.value}
+                            >
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select a role" />
@@ -142,6 +164,35 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      {registerForm.watch("role") === "child" && (
+                        <FormField
+                          control={registerForm.control}
+                          name="parentId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Parent</FormLabel>
+                              <Select
+                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                defaultValue={field.value?.toString()}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a parent" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {parents?.map((parent) => (
+                                    <SelectItem key={parent.id} value={parent.id.toString()}>
+                                      {parent.username}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
                         {registerMutation.isPending ? "Creating account..." : "Create account"}
                       </Button>

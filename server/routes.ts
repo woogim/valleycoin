@@ -23,7 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.url) return;
     const userId = parseInt(req.url.split("?userId=")[1]);
     if (isNaN(userId)) return;
-    
+
     clients.set(userId, ws);
 
     ws.on("close", () => {
@@ -37,6 +37,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       client.send(JSON.stringify(data));
     }
   }
+
+  // Get available parents for child registration
+  app.get("/api/parents", async (req, res) => {
+    const parents = await storage.getParents();
+    res.json(parents);
+  });
 
   // Coin management routes
   app.post("/api/coins", isAuthenticated, async (req, res) => {
@@ -59,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game time request routes
   app.post("/api/game-time/request", isAuthenticated, async (req, res) => {
     const request = await storage.createGameTimeRequest(req.body);
-    notifyUser(request.parentId, { type: "NEW_GAME_TIME_REQUEST", request });
+    notifyUser(request.parentId!, { type: "NEW_GAME_TIME_REQUEST", request });
     res.json(request);
   });
 
