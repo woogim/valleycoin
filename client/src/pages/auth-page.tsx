@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -37,8 +38,13 @@ export default function AuthPage() {
     }
   });
 
+  useEffect(() => {
+    if (user) {
+      setLocation(user.role === "parent" ? "/parent-dashboard" : "/child-dashboard");
+    }
+  }, [user, setLocation]);
+
   if (user) {
-    setLocation(user.role === "parent" ? "/parent-dashboard" : "/child-dashboard");
     return null;
   }
 
