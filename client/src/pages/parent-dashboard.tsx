@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest } from "@shared/schema";
-import { Separator } from "@/components/ui/separator";
 import { Coins, Clock, LogOut } from "lucide-react";
 
 export default function ParentDashboard() {
@@ -82,14 +81,18 @@ export default function ParentDashboard() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#fdf6e3]">
       <div className="flex flex-col">
         {/* Header */}
-        <header className="border-b">
+        <header className="border-b-4 border-[#b58d3c] bg-[#f9e4bc] shadow-lg">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">밸리코인 대시보드</h1>
-              <Button variant="outline" onClick={() => logoutMutation.mutate()} className="flex items-center gap-2">
+              <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
+              <Button 
+                variant="outline" 
+                onClick={() => logoutMutation.mutate()} 
+                className="flex items-center gap-2 border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+              >
                 <LogOut className="w-4 h-4" />
                 로그아웃
               </Button>
@@ -100,20 +103,24 @@ export default function ParentDashboard() {
         {/* Main Content */}
         <main className="container mx-auto px-4 py-6">
           <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Coins className="w-5 h-5 text-primary" />
-                  <CardTitle>밸리코인 지급</CardTitle>
-                </div>
-                <CardDescription>자녀에게 보상으로 밸리코인을 지급합니다</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+            <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg transform hover:scale-[1.02] transition-transform">
+              <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                <div className="flex items-center gap-3">
+                  <Coins className="w-8 h-8 text-[#b58d3c]" />
                   <div>
-                    <label className="block text-sm font-medium mb-1">자녀 선택</label>
+                    <CardTitle className="text-2xl text-[#5c4a21]">밸리코인 지급</CardTitle>
+                    <CardDescription className="text-[#8b6b35]">
+                      자녀에게 보상으로 밸리코인을 지급합니다
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                    <label className="block text-lg font-bold text-[#5c4a21] mb-2">자녀 선택</label>
                     <select 
-                      className="w-full border rounded-md p-2 bg-background"
+                      className="w-full border-2 border-[#b58d3c] rounded-md p-2 bg-[#fdf6e3] text-[#5c4a21]"
                       value={selectedChildId || ""}
                       onChange={(e) => setSelectedChildId(e.target.value ? parseInt(e.target.value) : null)}
                     >
@@ -125,27 +132,27 @@ export default function ParentDashboard() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">밸리코인 수량</label>
+                  <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                    <label className="block text-lg font-bold text-[#5c4a21] mb-2">밸리코인 수량</label>
                     <Input
                       type="number"
                       value={coinAmount}
                       onChange={(e) => setCoinAmount(e.target.value)}
                       placeholder="지급할 밸리코인 수량 입력"
-                      className="w-full"
+                      className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">지급 사유</label>
+                  <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                    <label className="block text-lg font-bold text-[#5c4a21] mb-2">지급 사유</label>
                     <Input
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       placeholder="예: 숙제 완료, 방 청소"
-                      className="w-full"
+                      className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
                     />
                   </div>
                   <Button
-                    className="w-full"
+                    className="w-full bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold text-lg py-6"
                     onClick={() => {
                       if (!selectedChildId) {
                         toast({
@@ -186,36 +193,40 @@ export default function ParentDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" />
-                  <CardTitle>게임 일수 요청</CardTitle>
+            <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
+              <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-8 h-8 text-[#b58d3c]" />
+                  <div>
+                    <CardTitle className="text-2xl text-[#5c4a21]">게임 일수 요청</CardTitle>
+                    <CardDescription className="text-[#8b6b35]">
+                      자녀의 게임 시간 요청을 관리합니다
+                    </CardDescription>
+                  </div>
                 </div>
-                <CardDescription>자녀의 게임 시간 요청을 관리합니다</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <div className="space-y-4">
                   {requests?.map((request: GameTimeRequest) => (
-                    <div key={request.id} className="bg-muted rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={request.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                      <div className="flex justify-between items-start mb-3">
                         <div>
-                          <p className="font-medium">
+                          <p className="text-lg font-bold text-[#5c4a21]">
                             {children?.find((child: any) => child.id === request.childId)?.username}님의 요청
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-[#8b6b35]">
                             {new Date(request.createdAt).toLocaleString()}
                           </p>
                         </div>
-                        <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary">
+                        <span className="px-3 py-1 text-sm font-bold rounded-full bg-[#b58d3c] text-white">
                           {request.days}일
                         </span>
                       </div>
                       {request.status === "pending" && (
-                        <div className="flex gap-2 mt-3">
+                        <div className="flex gap-2 mt-4">
                           <Button
                             variant="default"
-                            className="flex-1"
+                            className="flex-1 bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
                             onClick={() => respondToRequestMutation.mutate({
                               requestId: request.id,
                               status: "approved"
@@ -238,7 +249,7 @@ export default function ParentDashboard() {
                     </div>
                   ))}
                   {(!requests || requests.length === 0) && (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
                       대기 중인 요청이 없습니다
                     </div>
                   )}

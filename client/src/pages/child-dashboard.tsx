@@ -111,14 +111,18 @@ export default function ChildDashboard() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#fdf6e3]">
       <div className="flex flex-col">
         {/* Header */}
-        <header className="border-b">
+        <header className="border-b-4 border-[#b58d3c] bg-[#f9e4bc] shadow-lg">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold">밸리코인 대시보드</h1>
-              <Button variant="outline" onClick={() => logoutMutation.mutate()} className="flex items-center gap-2">
+              <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
+              <Button 
+                variant="outline" 
+                onClick={() => logoutMutation.mutate()} 
+                className="flex items-center gap-2 border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+              >
                 <LogOut className="w-4 h-4" />
                 로그아웃
               </Button>
@@ -130,40 +134,48 @@ export default function ChildDashboard() {
         <main className="container mx-auto px-4 py-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-primary" />
-                    <CardTitle>보유 밸리코인</CardTitle>
+              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg transform hover:scale-[1.02] transition-transform">
+                <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                  <div className="flex items-center gap-3">
+                    <Coins className="w-8 h-8 text-[#b58d3c]" />
+                    <div>
+                      <CardTitle className="text-2xl text-[#5c4a21]">보유 밸리코인</CardTitle>
+                      <CardDescription className="text-[#8b6b35]">
+                        현재 보유한 밸리코인으로 게임 시간을 구매할 수 있습니다
+                      </CardDescription>
+                    </div>
                   </div>
-                  <CardDescription>현재 보유한 밸리코인으로 게임 시간을 구매할 수 있습니다</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-4xl font-bold text-primary mb-4">
+                <CardContent className="pt-6">
+                  <div className="text-5xl font-bold text-[#b58d3c] text-center mb-4 font-pixel">
                     {balance?.balance || 0} 밸리코인
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-primary" />
-                    <CardTitle>게임 시간 관리</CardTitle>
-                  </div>
-                  <CardDescription>밸리코인으로 게임 시간을 구매하거나 부모님께 요청할 수 있습니다</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
+              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
+                <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-8 h-8 text-[#b58d3c]" />
                     <div>
-                      <h3 className="text-sm font-medium mb-2">밸리코인으로 구매</h3>
+                      <CardTitle className="text-2xl text-[#5c4a21]">게임 시간 관리</CardTitle>
+                      <CardDescription className="text-[#8b6b35]">
+                        밸리코인으로 게임 시간을 구매하거나 부모님께 요청할 수 있습니다
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-6">
+                    <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인으로 구매</h3>
                       <div className="flex gap-2">
                         <Input
                           type="number"
                           value={purchaseDays}
                           onChange={(e) => setPurchaseDays(e.target.value)}
                           placeholder="일"
-                          className="flex-1"
+                          className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
                         />
                         <Button
                           onClick={() => {
@@ -188,21 +200,22 @@ export default function ChildDashboard() {
                             purchaseGameDaysMutation.mutate(days);
                           }}
                           disabled={purchaseGameDaysMutation.isPending}
+                          className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
                         >
                           구매 (1밸리코인/일)
                         </Button>
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">부모님께 요청</h3>
+                    <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">부모님께 요청</h3>
                       <div className="flex gap-2">
                         <Input
                           type="number"
                           value={requestDays}
                           onChange={(e) => setRequestDays(e.target.value)}
                           placeholder="일"
-                          className="flex-1"
+                          className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
                         />
                         <Button
                           onClick={() => {
@@ -218,6 +231,7 @@ export default function ChildDashboard() {
                             requestGameDaysMutation.mutate(days);
                           }}
                           disabled={requestGameDaysMutation.isPending || !user?.parentId}
+                          className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
                         >
                           요청하기
                         </Button>
@@ -228,56 +242,60 @@ export default function ChildDashboard() {
               </Card>
             </div>
 
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-primary" />
-                    <CardTitle>활동 내역</CardTitle>
+            <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
+              <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                <div className="flex items-center gap-3">
+                  <History className="w-8 h-8 text-[#b58d3c]" />
+                  <div>
+                    <CardTitle className="text-2xl text-[#5c4a21]">활동 내역</CardTitle>
+                    <CardDescription className="text-[#8b6b35]">
+                      밸리코인 획득/사용 및 게임 시간 구매 내역
+                    </CardDescription>
                   </div>
-                  <CardDescription>밸리코인 획득/사용 및 게임 시간 구매 내역</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">밸리코인 내역</h3>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {history?.map((coin: Coin) => (
-                          <div key={coin.id} className="flex flex-col bg-muted rounded-lg p-3">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{coin.reason}</span>
-                              <span className={`font-bold ${coin.amount > 0 ? "text-green-600" : "text-red-600"}`}>
-                                {coin.amount > 0 ? "+" : ""}{coin.amount}밸리코인
-                              </span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(coin.createdAt).toLocaleString()}
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인 내역</h3>
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                      {history?.map((coin: Coin) => (
+                        <div key={coin.id} className="flex flex-col bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-[#5c4a21]">{coin.reason}</span>
+                            <span className={`font-bold ${coin.amount > 0 ? "text-green-700" : "text-red-700"}`}>
+                              {coin.amount > 0 ? "+" : ""}{coin.amount} 밸리코인
                             </span>
                           </div>
-                        ))}
-                      </div>
+                          <span className="text-sm text-[#8b6b35] mt-1">
+                            {new Date(coin.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                     </div>
+                  </div>
 
-                    <div>
-                      <h3 className="text-sm font-medium mb-3">구매 내역</h3>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {purchases?.map((purchase: GameTimePurchase) => (
-                          <div key={purchase.id} className="flex flex-col bg-muted rounded-lg p-3">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{purchase.days}일 구매</span>
-                              <span className="font-bold text-red-600">-{purchase.coinsSpent}밸리코인</span>
-                            </div>
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(purchase.createdAt).toLocaleString()}
+                  <div>
+                    <h3 className="text-lg font-bold text-[#5c4a21] mb-3">구매 내역</h3>
+                    <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
+                      {purchases?.map((purchase: GameTimePurchase) => (
+                        <div key={purchase.id} className="flex flex-col bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-[#5c4a21]">{purchase.days}일 구매</span>
+                            <span className="font-bold text-red-700">
+                              -{purchase.coinsSpent} 밸리코인
                             </span>
                           </div>
-                        ))}
-                      </div>
+                          <span className="text-sm text-[#8b6b35] mt-1">
+                            {new Date(purchase.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
