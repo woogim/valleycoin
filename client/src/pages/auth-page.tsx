@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import chickenImage from "@/assets/Stardew Valley Chicken.jpg";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -53,6 +54,13 @@ export default function AuthPage() {
       <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
         <div className="space-y-6">
           <div className="space-y-2 text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src={chickenImage} 
+                alt="Stardew Valley Chicken" 
+                className="w-24 h-24 object-cover rounded-full border-4 border-primary"
+              />
+            </div>
             <h1 className="text-3xl font-bold">밸리코인 대시보드</h1>
             <p className="text-muted-foreground">
               자녀의 게임 시간을 효과적으로 관리하세요
@@ -209,6 +217,11 @@ export default function AuthPage() {
         <div className="hidden md:block">
           <div className="rounded-lg bg-muted p-8 h-full flex items-center justify-center">
             <div className="text-center space-y-4">
+              <img 
+                src={chickenImage} 
+                alt="Stardew Valley Chicken" 
+                className="w-48 h-48 object-cover rounded-lg mx-auto mb-6"
+              />
               <h2 className="text-2xl font-bold">밸리코인 대시보드에 오신 것을 환영합니다</h2>
               <p className="text-muted-foreground">
                 자녀의 게임 시간을 안전하고 재미있게 관리하세요.
