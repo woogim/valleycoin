@@ -121,9 +121,9 @@ export default function ChildDashboard() {
               <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
               <div className="flex gap-2">
                 <SettingsDialog />
-                <Button 
-                  variant="outline" 
-                  onClick={() => logoutMutation.mutate()} 
+                <Button
+                  variant="outline"
+                  onClick={() => logoutMutation.mutate()}
                   className="flex items-center gap-2 border-2 border-[#b58d3c] hover:bg-[#f0d499]"
                 >
                   <LogOut className="w-4 h-4" />
@@ -152,7 +152,7 @@ export default function ChildDashboard() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="text-5xl font-bold text-[#b58d3c] text-center mb-4 font-pixel">
-                    {balance?.balance || 0} 밸리코인
+                    {(balance?.balance ?? 0).toFixed(2)} 밸리코인
                   </div>
                 </CardContent>
               </Card>
@@ -183,7 +183,7 @@ export default function ChildDashboard() {
                         />
                         <Button
                           onClick={() => {
-                            const days = parseInt(purchaseDays);
+                            const days = parseFloat(purchaseDays);
                             if (isNaN(days) || days <= 0) {
                               toast({
                                 title: "잘못된 입력",
@@ -193,10 +193,10 @@ export default function ChildDashboard() {
                               return;
                             }
                             const coinsRequired = days;
-                            if (balance?.balance < coinsRequired) {
+                            if ((balance?.balance ?? 0) < coinsRequired) {
                               toast({
                                 title: "밸리코인 부족",
-                                description: `${coinsRequired}밸리코인이 필요합니다`,
+                                description: `${coinsRequired.toFixed(2)}밸리코인이 필요합니다`,
                                 variant: "destructive",
                               });
                               return;
@@ -268,7 +268,7 @@ export default function ChildDashboard() {
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-[#5c4a21]">{coin.reason}</span>
                             <span className={`font-bold ${coin.amount > 0 ? "text-green-700" : "text-red-700"}`}>
-                              {coin.amount > 0 ? "+" : ""}{coin.amount} 밸리코인
+                              {coin.amount > 0 ? "+" : ""}{parseFloat(coin.amount).toFixed(2)} 밸리코인
                             </span>
                           </div>
                           <span className="text-sm text-[#8b6b35] mt-1">

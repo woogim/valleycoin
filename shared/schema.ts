@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, decimal, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,39 +7,39 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role", { enum: ["parent", "child"] }).notNull(),
-  parentId: integer("parent_id").references(() => users.id),
-  coinBalance: integer("coin_balance").notNull().default(0),
+  parentId: serial("parent_id").references(() => users.id),
+  coinBalance: decimal("coin_balance", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
 export const coins = pgTable("coins", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
-  amount: integer("amount").notNull(),
+  userId: serial("user_id").references(() => users.id).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const gameTimeRequests = pgTable("game_time_requests", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id),
-  days: integer("days").notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  parentId: serial("parent_id").references(() => users.id),
+  days: serial("days").notNull(),
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const gameTimePurchases = pgTable("game_time_purchases", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  days: integer("days").notNull(),
-  coinsSpent: integer("coins_spent").notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  days: serial("days").notNull(),
+  coinsSpent: decimal("coins_spent", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const deleteRequests = pgTable("delete_requests", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  parentId: serial("parent_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

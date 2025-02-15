@@ -140,9 +140,11 @@ export default function ParentDashboard() {
                     <label className="block text-lg font-bold text-[#5c4a21] mb-2">밸리코인 수량</label>
                     <Input
                       type="number"
+                      step="0.01"
+                      min="0"
                       value={coinAmount}
                       onChange={(e) => setCoinAmount(e.target.value)}
-                      placeholder="지급할 밸리코인 수량 입력"
+                      placeholder="지급할 밸리코인 수량 입력 (소수점 2자리까지)"
                       className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
                     />
                   </div>
@@ -166,7 +168,7 @@ export default function ParentDashboard() {
                         });
                         return;
                       }
-                      const amount = parseInt(coinAmount);
+                      const amount = parseFloat(coinAmount);
                       if (isNaN(amount) || amount <= 0) {
                         toast({
                           title: "오류",
