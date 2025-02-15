@@ -204,10 +204,15 @@ export default function ChildDashboard() {
               <div className="text-4xl font-bold mb-4">{balance?.balance || 0}코인</div>
               <div className="space-y-2">
                 {history?.map((coin: Coin) => (
-                  <div key={coin.id} className="flex justify-between items-center">
-                    <span>{coin.reason}</span>
-                    <span className={coin.amount > 0 ? "text-green-600" : "text-red-600"}>
-                      {coin.amount > 0 ? "+" : ""}{coin.amount}
+                  <div key={coin.id} className="flex flex-col border-b pb-2">
+                    <div className="flex justify-between items-center">
+                      <span>{coin.reason}</span>
+                      <span className={coin.amount > 0 ? "text-green-600" : "text-red-600"}>
+                        {coin.amount > 0 ? "+" : ""}{coin.amount}
+                      </span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(coin.createdAt).toLocaleString()}
                     </span>
                   </div>
                 ))}
@@ -222,9 +227,14 @@ export default function ChildDashboard() {
             <CardContent>
               <div className="space-y-2">
                 {purchases?.map((purchase: GameTimePurchase) => (
-                  <div key={purchase.id} className="flex justify-between items-center">
-                    <span>{purchase.days}일 구매</span>
-                    <span className="text-red-600">-{purchase.coinsSpent}코인</span>
+                  <div key={purchase.id} className="flex flex-col border-b pb-2">
+                    <div className="flex justify-between items-center">
+                      <span>{purchase.days}일 구매</span>
+                      <span className="text-red-600">-{purchase.coinsSpent}코인</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(purchase.createdAt).toLocaleString()}
+                    </span>
                   </div>
                 ))}
               </div>
