@@ -378,34 +378,6 @@ export default function ParentDashboard() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-1"
-                            onClick={() => {
-                              setEditingCoin(coin);
-                              setEditReason(coin.reason);
-                              setEditAmount(coin.amount);
-                            }}
-                          >
-                            <Pencil className="w-4 h-4" />
-                            수정
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="flex items-center gap-1"
-                            onClick={() => {
-                              if (confirm("정말로 이 코인 내역을 삭제하시겠습니까?")) {
-                                deleteCoinMutation.mutate(coin.id);
-                              }
-                            }}
-                          >
-                            <Trash className="w-4 h-4" />
-                            삭제
-                          </Button>
-                        </div>
                       </div>
                     ))}
                     {coinHistory.length === 0 && (
