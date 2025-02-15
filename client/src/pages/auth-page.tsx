@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, type User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,19 +15,25 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  const { data: parents } = useQuery({
+  const registerForm = useForm({
+    resolver: zodResolver(insertUserSchema),
+    defaultValues: {
+      role: "parent",
+      username: "",
+      password: "",
+    }
+  });
+
+  const { data: parents } = useQuery<User[]>({
     queryKey: ["/api/parents"],
-    enabled: false,
+    enabled: registerForm.watch("role") === "child",
   });
 
   const loginForm = useForm({
     resolver: zodResolver(insertUserSchema.pick({ username: true, password: true })),
-  });
-
-  const registerForm = useForm({
-    resolver: zodResolver(insertUserSchema),
     defaultValues: {
-      role: "parent"
+      username: "",
+      password: "",
     }
   });
 
@@ -138,16 +144,7 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Role</FormLabel>
                             <Select
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                if (value === "child") {
-                                  // Only fetch parents when role is child
-                                  registerForm.setValue("parentId", undefined);
-                                  registerForm.setValue("parentId", undefined);
-                                } else {
-                                  registerForm.setValue("parentId", undefined);
-                                }
-                              }}
+                              onValueChange={field.onChange}
                               defaultValue={field.value}
                             >
                               <FormControl>
@@ -164,7 +161,7 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      {registerForm.watch("role") === "child" && (
+                      {registerForm.watch("role") === "child" && parents && parents.length > 0 && (
                         <FormField
                           control={registerForm.control}
                           name="parentId"
@@ -181,7 +178,7 @@ export default function AuthPage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {parents?.map((parent) => (
+                                  {parents.map((parent) => (
                                     <SelectItem key={parent.id} value={parent.id.toString()}>
                                       {parent.username}
                                     </SelectItem>
