@@ -92,9 +92,18 @@ export class DatabaseStorage implements IStorage {
 
   async addCoins(insertCoin: InsertCoin): Promise<Coin> {
     const [coin] = await db.transaction(async (tx) => {
+      // 숫자형으로 변환하고 2자리 소수점으로 고정
+      const coinAmount = parseFloat(insertCoin.amount.toString());
+      if (isNaN(coinAmount)) {
+        throw new Error("Invalid coin amount");
+      }
+
       const [newCoin] = await tx
         .insert(coins)
-        .values(insertCoin)
+        .values({
+          ...insertCoin,
+          amount: coinAmount.toFixed(2)
+        })
         .returning();
 
       const [user] = await tx
@@ -104,16 +113,16 @@ export class DatabaseStorage implements IStorage {
         .from(users)
         .where(eq(users.id, insertCoin.userId));
 
-      const currentBalance = user?.coinBalance || 0;
+      const currentBalance = parseFloat(user?.coinBalance?.toString() || "0");
       await tx
         .update(users)
         .set({
-          coinBalance: currentBalance + insertCoin.amount,
+          coinBalance: (currentBalance + coinAmount).toFixed(2),
         })
         .where(eq(users.id, insertCoin.userId));
 
       const timestamp = new Date().toLocaleString();
-      console.log(`[${timestamp}] 사용자 ${insertCoin.userId}의 코인 ${insertCoin.amount > 0 ? '획득' : '사용'}: ${insertCoin.amount}코인 (사유: ${insertCoin.reason})`);
+      console.log(`[${timestamp}] 사용자 ${insertCoin.userId}의 코인 ${coinAmount > 0 ? '획득' : '사용'}: ${coinAmount.toFixed(2)}코인 (사유: ${insertCoin.reason})`);
 
       return [newCoin];
     });

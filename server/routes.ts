@@ -99,8 +99,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/coins", isAuthenticated, async (req, res) => {
     try {
       const { userId, amount, reason } = req.body;
-      // amount를 decimal로 변환
-      const decimalAmount = parseFloat(amount).toFixed(2);
+
+      // 숫자 형식 검증
+      const numAmount = Number(amount);
+      if (isNaN(numAmount)) {
+        throw new Error("Invalid amount format");
+      }
+
+      // amount를 decimal로 변환 (최대 2자리 소수점)
+      const decimalAmount = numAmount.toFixed(2);
       const coin = await storage.addCoins({
         userId,
         amount: decimalAmount,
@@ -110,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(coin);
     } catch (error) {
       console.error("Error adding coins:", error);
-      res.status(400).json({ message: "Failed to add coins" });
+      res.status(400).json({ message: "코인 추가에 실패했습니다. 올바른 금액을 입력해주세요." });
     }
   });
 
@@ -118,26 +125,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const balance = await storage.getCoinBalance(parseInt(req.params.userId));
       console.log(`Coin balance for user ${req.params.userId}:`, balance);
-      // balance를 문자열로 반환
-      res.json({ balance: parseFloat(balance).toFixed(2) });
+      // balance를 문자열로 반환 (최대 2자리 소수점)
+      const numBalance = Number(balance);
+      if (isNaN(numBalance)) {
+        throw new Error("Invalid balance format");
+      }
+      res.json({ balance: numBalance.toFixed(2) });
     } catch (error) {
       console.error("Error getting coin balance:", error);
-      res.status(400).json({ message: "Failed to get coin balance" });
+      res.status(400).json({ message: "잔액 조회에 실패했습니다." });
     }
   });
 
   app.get("/api/coins/history/:userId", isAuthenticated, async (req, res) => {
     try {
       const history = await storage.getCoinHistory(parseInt(req.params.userId));
-      // amount를 decimal로 변환하여 반환
-      const formattedHistory = history.map(coin => ({
-        ...coin,
-        amount: parseFloat(coin.amount).toFixed(2)
-      }));
+      // amount를 decimal로 변환하여 반환 (최대 2자리 소수점)
+      const formattedHistory = history.map(coin => {
+        const numAmount = Number(coin.amount);
+        if (isNaN(numAmount)) {
+          throw new Error("Invalid amount format in history");
+        }
+        return {
+          ...coin,
+          amount: numAmount.toFixed(2)
+        };
+      });
       res.json(formattedHistory);
     } catch (error) {
       console.error("Error getting coin history:", error);
-      res.status(400).json({ message: "Failed to get coin history" });
+      res.status(400).json({ message: "코인 내역 조회에 실패했습니다." });
     }
   });
 
