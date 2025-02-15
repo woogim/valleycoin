@@ -1,12 +1,15 @@
 import session from "express-session";
-import createMemoryStore from "memorystore";
 import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { users, coins, gameTimeRequests } from "@shared/schema";
+import connectPg from "connect-pg-simple";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   sessionStore: session.Store;
-  
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -24,96 +27,86 @@ export interface IStorage {
   updateGameTimeRequest(id: number, status: "approved" | "rejected"): Promise<GameTimeRequest>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private coins: Map<number, Coin>;
-  private gameTimeRequests: Map<number, GameTimeRequest>;
+export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  currentId: number;
 
   constructor() {
-    this.users = new Map();
-    this.coins = new Map();
-    this.gameTimeRequests = new Map();
-    this.currentId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({
+      pool: db.client,
+      createTableIfMissing: true,
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getChildren(parentId: number): Promise<User[]> {
-    return Array.from(this.users.values()).filter(
-      (user) => user.parentId === parentId && user.role === "child",
-    );
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.parentId, parentId));
   }
 
   async getCoinBalance(userId: number): Promise<number> {
-    return Array.from(this.coins.values())
-      .filter((coin) => coin.userId === userId)
-      .reduce((sum, coin) => sum + coin.amount, 0);
+    const result = await db
+      .select({
+        sum: coins.amount,
+      })
+      .from(coins)
+      .where(eq(coins.userId, userId));
+
+    return result[0]?.sum || 0;
   }
 
   async addCoins(insertCoin: InsertCoin): Promise<Coin> {
-    const id = this.currentId++;
-    const coin: Coin = {
-      ...insertCoin,
-      id,
-      createdAt: new Date(),
-    };
-    this.coins.set(id, coin);
+    const [coin] = await db.insert(coins).values(insertCoin).returning();
     return coin;
   }
 
   async getCoinHistory(userId: number): Promise<Coin[]> {
-    return Array.from(this.coins.values())
-      .filter((coin) => coin.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(coins)
+      .where(eq(coins.userId, userId))
+      .orderBy(coins.createdAt);
   }
 
   async createGameTimeRequest(insertRequest: InsertGameTimeRequest): Promise<GameTimeRequest> {
-    const id = this.currentId++;
-    const request: GameTimeRequest = {
-      ...insertRequest,
-      id,
-      status: "pending",
-      createdAt: new Date(),
-    };
-    this.gameTimeRequests.set(id, request);
+    const [request] = await db
+      .insert(gameTimeRequests)
+      .values({ ...insertRequest, status: "pending" })
+      .returning();
     return request;
   }
 
   async getGameTimeRequests(parentId: number): Promise<GameTimeRequest[]> {
-    return Array.from(this.gameTimeRequests.values())
-      .filter((request) => request.parentId === parentId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return await db
+      .select()
+      .from(gameTimeRequests)
+      .where(eq(gameTimeRequests.parentId, parentId))
+      .orderBy(gameTimeRequests.createdAt);
   }
 
   async updateGameTimeRequest(id: number, status: "approved" | "rejected"): Promise<GameTimeRequest> {
-    const request = this.gameTimeRequests.get(id);
-    if (!request) {
-      throw new Error("Request not found");
-    }
-    const updatedRequest = { ...request, status };
-    this.gameTimeRequests.set(id, updatedRequest);
-    return updatedRequest;
+    const [request] = await db
+      .update(gameTimeRequests)
+      .set({ status })
+      .where(eq(gameTimeRequests.id, id))
+      .returning();
+    return request;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
