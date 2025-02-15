@@ -44,6 +44,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(parents);
   });
 
+  // Get children for parent
+  app.get("/api/children/:parentId", isAuthenticated, async (req, res) => {
+    const children = await storage.getChildren(parseInt(req.params.parentId));
+    res.json(children);
+  });
+
   // Coin management routes
   app.post("/api/coins", isAuthenticated, async (req, res) => {
     const { userId, amount, reason } = req.body;
