@@ -179,23 +179,20 @@ export function setupAuth(app: Express) {
         return res.status(400).send("Invalid user");
       }
 
-      if (req.user?.role === "child") {
-        if (!req.user?.parentId) {
-          return res.status(400).send("부모 계정 정보가 없습니다");
-        }
-
+      if (req.user?.role === "child" && req.user?.parentId) {
+        // 부모가 있는 자녀 계정은 승인 요청
         await storage.createDeleteRequest(userId, req.user.parentId);
         console.log(`[Auth] Delete request created for child ${userId}`);
         res.sendStatus(200);
       } else {
-        // 부모 계정은 바로 삭제
+        // 부모 계정이나 부모가 없는 자녀 계정은 바로 삭제
         await storage.deleteUser(userId);
         req.logout((err) => {
           if (err) {
             console.error(`[Auth] Logout error after account deletion:`, err);
             return next(err);
           }
-          console.log(`[Auth] Parent account deleted: ${userId}`);
+          console.log(`[Auth] Account deleted: ${userId}`);
           res.sendStatus(200);
         });
       }
