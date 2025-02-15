@@ -210,45 +210,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add new route for direct balance modification
-  app.post("/api/coins/set-balance", isAuthenticated, async (req, res) => {
-    try {
-      const { userId, newBalance } = req.body;
-
-      // Verify if the user is a parent
-      const requestingUser = await storage.getUser(req.user!.id);
-      if (requestingUser?.role !== "parent") {
-        throw new Error("Unauthorized: Only parents can modify balance directly");
-      }
-
-      // Get the target user
-      const targetUser = await storage.getUser(userId);
-      if (!targetUser || targetUser.parentId !== req.user!.id) {
-        throw new Error("Unauthorized: Can only modify your own children's balance");
-      }
-
-      // Convert balance to number and validate
-      const numBalance = Number(newBalance);
-      if (isNaN(numBalance) || numBalance < 0) {
-        throw new Error("Invalid balance amount");
-      }
-
-      await storage.setUserBalance(userId, numBalance);
-
-      // Notify the child about balance update
-      notifyUser(userId, { 
-        type: "BALANCE_UPDATE",
-        newBalance: numBalance.toFixed(2)
-      });
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Error setting balance:", error);
-      res.status(400).json({ message: error.message });
-    }
-  });
-
-
   // Game time request routes
   app.post("/api/game-time/request", isAuthenticated, async (req, res) => {
     const request = await storage.createGameTimeRequest(req.body);
