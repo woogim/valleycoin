@@ -285,15 +285,21 @@ export class DatabaseStorage implements IStorage {
   async getParentCoinHistory(childIds: number[]): Promise<(Coin & { username: string })[]> {
     if (!childIds.length) return [];
 
-    return await db
+    const history = await db
       .select({
-        ...coins,
+        id: coins.id,
+        userId: coins.userId,
+        amount: coins.amount,
+        reason: coins.reason,
+        createdAt: coins.createdAt,
         username: users.username,
       })
       .from(coins)
       .leftJoin(users, eq(coins.userId, users.id))
-      .where(sql`${coins.userId} = ANY(${childIds})`)
-      .orderBy(coins.createdAt);
+      .where(sql`${coins.userId} IN (${sql.join(childIds)})`)
+      .orderBy(sql`${coins.createdAt} DESC`);
+
+    return history;
   }
 
   async getCoin(coinId: number): Promise<Coin> {

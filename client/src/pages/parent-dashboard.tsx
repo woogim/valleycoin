@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest, DeleteRequest, Coin } from "@shared/schema";
@@ -26,22 +26,22 @@ export default function ParentDashboard() {
   const [editReason, setEditReason] = useState("");
   const [editAmount, setEditAmount] = useState("");
 
-  const { data: children } = useQuery({
+  const { data: children = [] } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
     enabled: !!user?.id,
   });
 
-  const { data: requests } = useQuery({
+  const { data: requests = [] } = useQuery({
     queryKey: [`/api/game-time/requests/${user?.id}`],
     enabled: !!user?.id,
   });
 
-  const { data: deleteRequests } = useQuery<DeleteRequest[]>({
+  const { data: deleteRequests = [] } = useQuery<DeleteRequest[]>({
     queryKey: [`/api/delete-requests/${user?.id}`],
     enabled: !!user?.id,
   });
 
-  const { data: coinHistory } = useQuery<CoinHistoryItem[]>({
+  const { data: coinHistory = [] } = useQuery<CoinHistoryItem[]>({
     queryKey: [`/api/coins/parent-history/${user?.id}`],
     enabled: !!user?.id,
   });
@@ -59,6 +59,8 @@ export default function ParentDashboard() {
         title: "새로운 탈퇴 요청",
         description: "자녀가 계정 탈퇴를 요청했습니다",
       });
+    } else if (data.type === "COIN_UPDATE") {
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/parent-history/${user?.id}`] });
     }
   });
 
@@ -295,16 +297,16 @@ export default function ParentDashboard() {
                   <div className="flex items-center gap-3">
                     <Coins className="w-8 h-8 text-[#b58d3c]" />
                     <div>
-                      <CardTitle className="text-2xl text-[#5c4a21]">코인 지급 내역</CardTitle>
+                      <CardTitle className="text-2xl text-[#5c4a21]">코인 내역</CardTitle>
                       <CardDescription className="text-[#8b6b35]">
-                        자녀들에게 지급한 코인 내역을 관리합니다
+                        자녀들의 코인 내역을 관리합니다
                       </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="space-y-4">
-                    {coinHistory?.map((coin) => (
+                    {coinHistory.map((coin) => (
                       <div key={coin.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
                         <div className="flex justify-between items-start mb-2">
                           <div>
@@ -314,8 +316,8 @@ export default function ParentDashboard() {
                               {new Date(coin.createdAt).toLocaleString()}
                             </p>
                           </div>
-                          <span className={`font-bold ${coin.amount.startsWith('-') ? "text-red-700" : "text-green-700"}`}>
-                            {!coin.amount.startsWith('-') ? "+" : ""}{coin.amount} 밸리코인
+                          <span className={`font-bold ${parseFloat(coin.amount) < 0 ? "text-red-700" : "text-green-700"}`}>
+                            {parseFloat(coin.amount) > 0 ? "+" : ""}{coin.amount} 밸리코인
                           </span>
                         </div>
                         <div className="flex gap-2 mt-3">
@@ -348,9 +350,9 @@ export default function ParentDashboard() {
                         </div>
                       </div>
                     ))}
-                    {(!coinHistory || coinHistory.length === 0) && (
+                    {coinHistory.length === 0 && (
                       <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
-                        코인 지급 내역이 없습니다
+                        코인 내역이 없습니다
                       </div>
                     )}
                   </div>

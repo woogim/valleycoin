@@ -35,16 +35,30 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: false, // development 환경에서는 false로 설정
+      secure: process.env.NODE_ENV === "production",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
       httpOnly: true,
+      sameSite: "lax"
     }
   };
 
-  app.set("trust proxy", 1);
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // 세션 디버깅을 위한 미들웨어
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api")) {
+      next();
+      return;
+    }
+    console.log(`[Auth] ${req.method} ${req.path} - Authenticated: ${req.isAuthenticated()}`);
+    next();
+  });
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
