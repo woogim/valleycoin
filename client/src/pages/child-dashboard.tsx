@@ -16,10 +16,12 @@ export default function ChildDashboard() {
 
   const { data: balance } = useQuery({
     queryKey: [`/api/coins/balance/${user?.id}`],
+    enabled: !!user?.id,
   });
 
   const { data: history } = useQuery({
     queryKey: [`/api/coins/history/${user?.id}`],
+    enabled: !!user?.id,
   });
 
   useWebSocket((data) => {
@@ -40,9 +42,12 @@ export default function ChildDashboard() {
 
   const requestGameTimeMutation = useMutation({
     mutationFn: async (minutes: number) => {
+      if (!user?.id || !user?.parentId) {
+        throw new Error("Missing user or parent information");
+      }
       await apiRequest("POST", "/api/game-time/request", {
-        childId: user?.id,
-        parentId: user?.parentId,
+        childId: user.id,
+        parentId: user.parentId,
         minutes,
       });
     },
@@ -53,7 +58,16 @@ export default function ChildDashboard() {
         description: "Game time request sent",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -101,10 +115,21 @@ export default function ChildDashboard() {
                 </div>
                 <Button
                   className="w-full"
-                  onClick={() => requestGameTimeMutation.mutate(parseInt(requestMinutes))}
-                  disabled={requestGameTimeMutation.isPending}
+                  onClick={() => {
+                    const minutes = parseInt(requestMinutes);
+                    if (isNaN(minutes) || minutes <= 0) {
+                      toast({
+                        title: "Invalid input",
+                        description: "Please enter a valid number of minutes",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    requestGameTimeMutation.mutate(minutes);
+                  }}
+                  disabled={requestGameTimeMutation.isPending || !user?.parentId}
                 >
-                  Request Time
+                  {!user?.parentId ? "No parent assigned" : "Request Time"}
                 </Button>
               </div>
             </CardContent>

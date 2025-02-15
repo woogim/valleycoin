@@ -21,25 +21,14 @@ export const coins = pgTable("coins", {
 export const gameTimeRequests = pgTable("game_time_requests", {
   id: serial("id").primaryKey(),
   childId: integer("child_id").references(() => users.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
+  parentId: integer("parent_id").references(() => users.id),
   minutes: integer("minutes").notNull(),
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  role: true,
-  parentId: true,
-});
-
-export const insertCoinSchema = createInsertSchema(coins).pick({
-  userId: true,
-  amount: true,
-  reason: true,
-});
-
+export const insertUserSchema = createInsertSchema(users);
+export const insertCoinSchema = createInsertSchema(coins);
 export const insertGameTimeRequestSchema = createInsertSchema(gameTimeRequests).pick({
   childId: true,
   parentId: true,
