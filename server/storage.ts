@@ -75,14 +75,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCoinBalance(userId: number): Promise<number> {
-    const result = await db
+    const [user] = await db
       .select({
-        sum: coins.amount,
+        coinBalance: users.coinBalance,
       })
-      .from(coins)
-      .where(eq(coins.userId, userId));
-
-    return result[0]?.sum || 0;
+      .from(users)
+      .where(eq(users.id, userId));
+    return user?.coinBalance || 0;
   }
 
   async addCoins(insertCoin: InsertCoin): Promise<Coin> {
@@ -143,7 +142,7 @@ export class DatabaseStorage implements IStorage {
 
   async purchaseGameTime(childId: number, minutes: number, coinsSpent: number): Promise<GameTimePurchase> {
     const [purchase] = await db.transaction(async (tx) => {
-      // Get current balances
+      // Get current balance
       const [user] = await tx
         .select({
           coinBalance: users.coinBalance,
@@ -152,16 +151,21 @@ export class DatabaseStorage implements IStorage {
         .from(users)
         .where(eq(users.id, childId));
 
-      if (!user || user.coinBalance < coinsSpent) {
-        throw new Error("Insufficient coins");
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const currentBalance = user.coinBalance || 0;
+      if (currentBalance < coinsSpent) {
+        throw new Error(`Insufficient coins. Required: ${coinsSpent}, Available: ${currentBalance}`);
       }
 
       // Update balances
       await tx
         .update(users)
         .set({
-          coinBalance: user.coinBalance - coinsSpent,
-          gameTimeBalance: user.gameTimeBalance + minutes,
+          coinBalance: currentBalance - coinsSpent,
+          gameTimeBalance: (user.gameTimeBalance || 0) + minutes,
         })
         .where(eq(users.id, childId));
 
