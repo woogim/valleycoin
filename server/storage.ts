@@ -36,6 +36,7 @@ export interface IStorage {
   createDeleteRequest(childId: number, parentId: number): Promise<void>;
   getDeleteRequest(childId: number): Promise<DeleteRequest | undefined>;
   removeDeleteRequest(childId: number): Promise<void>;
+  getDeleteRequests(parentId: number): Promise<DeleteRequest[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -268,6 +269,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(deleteRequests)
       .where(eq(deleteRequests.childId, childId));
+  }
+  async getDeleteRequests(parentId: number): Promise<DeleteRequest[]> {
+    return await db
+      .select()
+      .from(deleteRequests)
+      .where(eq(deleteRequests.parentId, parentId))
+      .orderBy(deleteRequests.createdAt);
   }
 }
 

@@ -196,5 +196,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(purchases);
   });
 
+  // 탈퇴 요청 조회 API
+  app.get("/api/delete-requests/:parentId", isAuthenticated, async (req, res) => {
+    const requests = await storage.getDeleteRequests(parseInt(req.params.parentId));
+    res.json(requests);
+  });
+
+  // 계정 삭제 API
+  app.post("/api/user/delete/:userId", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteUser(parseInt(req.params.userId));
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Delete request error:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
   return httpServer;
 }
