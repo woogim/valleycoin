@@ -79,18 +79,19 @@ export class DatabaseStorage implements IStorage {
       })
       .from(users)
       .where(eq(users.id, userId));
-    return user?.coinBalance || 0;
+    const balance = user?.coinBalance || 0;
+    const timestamp = new Date().toLocaleString();
+    console.log(`[${timestamp}] 사용자 ${userId}의 코인 잔액: ${balance}`);
+    return balance;
   }
 
   async addCoins(insertCoin: InsertCoin): Promise<Coin> {
     const [coin] = await db.transaction(async (tx) => {
-      // Insert into coins table
       const [newCoin] = await tx
         .insert(coins)
         .values(insertCoin)
         .returning();
 
-      // Update user's coin balance
       const [user] = await tx
         .select({
           coinBalance: users.coinBalance,
@@ -105,6 +106,9 @@ export class DatabaseStorage implements IStorage {
           coinBalance: currentBalance + insertCoin.amount,
         })
         .where(eq(users.id, insertCoin.userId));
+
+      const timestamp = new Date().toLocaleString();
+      console.log(`[${timestamp}] 사용자 ${insertCoin.userId}의 코인 ${insertCoin.amount > 0 ? '획득' : '사용'}: ${insertCoin.amount}코인 (사유: ${insertCoin.reason})`);
 
       return [newCoin];
     });
@@ -156,7 +160,6 @@ export class DatabaseStorage implements IStorage {
 
   async purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase> {
     const [purchase] = await db.transaction(async (tx) => {
-      // Get current balance
       const [user] = await tx
         .select({
           coinBalance: users.coinBalance,
@@ -173,7 +176,6 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`코인이 부족합니다. 필요: ${coinsSpent}, 보유: ${currentBalance}`);
       }
 
-      // Update balance
       await tx
         .update(users)
         .set({
@@ -181,7 +183,6 @@ export class DatabaseStorage implements IStorage {
         })
         .where(eq(users.id, childId));
 
-      // Record purchase
       const [purchase] = await tx
         .insert(gameTimePurchases)
         .values({
@@ -190,6 +191,9 @@ export class DatabaseStorage implements IStorage {
           coinsSpent,
         })
         .returning();
+
+      const timestamp = new Date().toLocaleString();
+      console.log(`[${timestamp}] 사용자 ${childId}가 ${days}일 게임 시간 구매: ${coinsSpent}코인 사용`);
 
       return [purchase];
     });
