@@ -9,24 +9,14 @@ import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Coin, GameTimePurchase } from "@shared/schema";
 import { Coins, Clock, History, LogOut } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { SettingsDialog } from "@/components/settings-dialog";
 
 type Balance = {
   balance: number;
 };
 
 export default function ChildDashboard() {
-  const { user, logoutMutation, deleteAccountMutation } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
   const [requestDays, setRequestDays] = useState("");
   const [purchaseDays, setPurchaseDays] = useState("");
@@ -130,34 +120,7 @@ export default function ChildDashboard() {
             <div className="flex justify-between items-center">
               <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
               <div className="flex gap-2">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="destructive"
-                      className="flex items-center gap-2"
-                    >
-                      회원탈퇴
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        계정을 삭제하면 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
-                        보유한 밸리코인과 게임 시간도 모두 삭제됩니다.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground"
-                        onClick={() => deleteAccountMutation.mutate()}
-                      >
-                        회원탈퇴
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <SettingsDialog />
                 <Button 
                   variant="outline" 
                   onClick={() => logoutMutation.mutate()} 

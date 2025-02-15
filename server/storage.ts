@@ -1,8 +1,8 @@
 import session from "express-session";
-import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase } from "@shared/schema";
+import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or } from "drizzle-orm";
-import { users, coins, gameTimeRequests, gameTimePurchases } from "@shared/schema";
+import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
 const PostgresSessionStore = connectPg(session);
@@ -32,6 +32,10 @@ export interface IStorage {
   purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase>;
   getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]>;
   deleteUser(userId: number): Promise<void>;
+  updateUsername(userId: number, username: string): Promise<User>;
+  createDeleteRequest(childId: number, parentId: number): Promise<void>;
+  getDeleteRequest(childId: number): Promise<DeleteRequest | undefined>;
+  removeDeleteRequest(childId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -221,10 +225,40 @@ export class DatabaseStorage implements IStorage {
         )
       );
       await tx.delete(coins).where(eq(coins.userId, userId));
+      await tx.delete(deleteRequests).where(eq(deleteRequests.childId, userId));
 
       // Finally delete the user
       await tx.delete(users).where(eq(users.id, userId));
     });
+  }
+
+  async updateUsername(userId: number, username: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ username })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async createDeleteRequest(childId: number, parentId: number): Promise<void> {
+    await db
+      .insert(deleteRequests)
+      .values({ childId, parentId });
+  }
+
+  async getDeleteRequest(childId: number): Promise<DeleteRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(deleteRequests)
+      .where(eq(deleteRequests.childId, childId));
+    return request;
+  }
+
+  async removeDeleteRequest(childId: number): Promise<void> {
+    await db
+      .delete(deleteRequests)
+      .where(eq(deleteRequests.childId, childId));
   }
 }
 

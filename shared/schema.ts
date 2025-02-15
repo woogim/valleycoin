@@ -36,6 +36,13 @@ export const gameTimePurchases = pgTable("game_time_purchases", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const deleteRequests = pgTable("delete_requests", {
+  id: serial("id").primaryKey(),
+  childId: integer("child_id").references(() => users.id).notNull(),
+  parentId: integer("parent_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Schema definitions
 export const insertUserSchema = createInsertSchema(users);
 export const insertCoinSchema = createInsertSchema(coins);
@@ -49,14 +56,20 @@ export const insertGameTimePurchaseSchema = createInsertSchema(gameTimePurchases
   days: true,
   coinsSpent: true,
 });
+export const insertDeleteRequestSchema = createInsertSchema(deleteRequests).pick({
+  childId: true,
+  parentId: true,
+});
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCoin = z.infer<typeof insertCoinSchema>;
 export type InsertGameTimeRequest = z.infer<typeof insertGameTimeRequestSchema>;
 export type InsertGameTimePurchase = z.infer<typeof insertGameTimePurchaseSchema>;
+export type InsertDeleteRequest = z.infer<typeof insertDeleteRequestSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Coin = typeof coins.$inferSelect;
 export type GameTimeRequest = typeof gameTimeRequests.$inferSelect;
 export type GameTimePurchase = typeof gameTimePurchases.$inferSelect;
+export type DeleteRequest = typeof deleteRequests.$inferSelect;

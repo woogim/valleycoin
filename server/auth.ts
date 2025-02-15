@@ -140,6 +140,95 @@ export function setupAuth(app: Express) {
     res.json(req.user);
   });
 
+  app.post("/api/user/update-username", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const { username } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(400).send("Invalid user");
+      }
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(400).send("이미 사용 중인 닉네임입니다");
+      }
+
+      const updatedUser = await storage.updateUsername(userId, username);
+      console.log(`[Auth] Username updated for user ${userId}: ${username}`);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error(`[Auth] Username update error:`, error);
+      next(error);
+    }
+  });
+
+  app.post("/api/user/request-delete", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(400).send("Invalid user");
+      }
+
+      if (req.user?.role === "child") {
+        if (!req.user?.parentId) {
+          return res.status(400).send("부모 계정 정보가 없습니다");
+        }
+
+        await storage.createDeleteRequest(userId, req.user.parentId);
+        console.log(`[Auth] Delete request created for child ${userId}`);
+        res.sendStatus(200);
+      } else {
+        // 부모 계정은 바로 삭제
+        await storage.deleteUser(userId);
+        req.logout((err) => {
+          if (err) {
+            console.error(`[Auth] Logout error after account deletion:`, err);
+            return next(err);
+          }
+          console.log(`[Auth] Parent account deleted: ${userId}`);
+          res.sendStatus(200);
+        });
+      }
+    } catch (error) {
+      console.error(`[Auth] Delete request error:`, error);
+      next(error);
+    }
+  });
+
+  app.post("/api/user/approve-delete/:childId", async (req, res, next) => {
+    if (!req.isAuthenticated() || req.user?.role !== "parent") {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      const childId = parseInt(req.params.childId);
+      const parentId = req.user.id;
+
+      const deleteRequest = await storage.getDeleteRequest(childId);
+      if (!deleteRequest || deleteRequest.parentId !== parentId) {
+        return res.status(400).send("Invalid delete request");
+      }
+
+      await storage.deleteUser(childId);
+      await storage.removeDeleteRequest(childId);
+      console.log(`[Auth] Child account ${childId} deleted by parent ${parentId}`);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error(`[Auth] Delete approval error:`, error);
+      next(error);
+    }
+  });
+
   app.post("/api/user/delete", async (req, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).send("Unauthorized");
