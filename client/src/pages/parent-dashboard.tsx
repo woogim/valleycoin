@@ -10,6 +10,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest, DeleteRequest } from "@shared/schema";
 import { Coins, Clock, UserX, LogOut } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function ParentDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -17,6 +18,8 @@ export default function ParentDashboard() {
   const [coinAmount, setCoinAmount] = useState("");
   const [reason, setReason] = useState("");
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
+  const [newBalance, setNewBalance] = useState("");
 
   const { data: children } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
@@ -111,6 +114,27 @@ export default function ParentDashboard() {
     },
   });
 
+  const setBalanceMutation = useMutation({
+    mutationFn: async ({ childId, newBalance }: { childId: number, newBalance: number }) => {
+      await apiRequest("POST", "/api/coins/set-balance", { userId: childId, newBalance });
+    },
+    onSuccess: () => {
+      setIsBalanceDialogOpen(false);
+      setNewBalance("");
+      toast({
+        title: "성공",
+        description: "밸리코인 잔액이 수정되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user) return null;
 
   return (
@@ -123,9 +147,9 @@ export default function ParentDashboard() {
               <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
               <div className="flex gap-2">
                 <SettingsDialog />
-                <Button 
-                  variant="outline" 
-                  onClick={() => logoutMutation.mutate()} 
+                <Button
+                  variant="outline"
+                  onClick={() => logoutMutation.mutate()}
                   className="flex items-center gap-2 border-2 border-[#b58d3c] hover:bg-[#f0d499]"
                 >
                   <LogOut className="w-4 h-4" />
@@ -156,7 +180,7 @@ export default function ParentDashboard() {
                   <div className="space-y-4">
                     <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
                       <label className="block text-lg font-bold text-[#5c4a21] mb-2">자녀 선택</label>
-                      <select 
+                      <select
                         className="w-full border-2 border-[#b58d3c] rounded-md p-2 bg-[#fdf6e3] text-[#5c4a21]"
                         value={selectedChildId || ""}
                         onChange={(e) => setSelectedChildId(e.target.value ? parseInt(e.target.value) : null)}
@@ -228,6 +252,84 @@ export default function ParentDashboard() {
                     >
                       {addCoinsMutation.isPending ? "처리 중..." : "밸리코인 지급"}
                     </Button>
+                    <Dialog open={isBalanceDialogOpen} onOpenChange={setIsBalanceDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full mt-4 border-2 border-[#b58d3c] hover:bg-[#f0d499] text-[#5c4a21]"
+                        >
+                          밸리코인 잔액 직접 수정
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-[#faf1d6] border-4 border-[#b58d3c]">
+                        <DialogHeader>
+                          <DialogTitle className="text-[#5c4a21]">밸리코인 잔액 직접 수정</DialogTitle>
+                          <DialogDescription className="text-[#8b6b35]">
+                            자녀의 밸리코인 잔액을 직접 수정합니다. 이 작업은 기록에 남지 않습니다.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                            <label className="block text-lg font-bold text-[#5c4a21] mb-2">자녀 선택</label>
+                            <select
+                              className="w-full border-2 border-[#b58d3c] rounded-md p-2 bg-[#fdf6e3] text-[#5c4a21]"
+                              value={selectedChildId || ""}
+                              onChange={(e) => setSelectedChildId(e.target.value ? parseInt(e.target.value) : null)}
+                            >
+                              <option value="">선택하세요</option>
+                              {children?.map((child: any) => (
+                                <option key={child.id} value={child.id}>
+                                  {child.username}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                            <label className="block text-lg font-bold text-[#5c4a21] mb-2">새로운 잔액</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={newBalance}
+                              onChange={(e) => setNewBalance(e.target.value)}
+                              placeholder="새로운 밸리코인 잔액 입력"
+                              className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
+                            />
+                          </div>
+                          <Button
+                            className="w-full bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
+                            onClick={() => {
+                              if (!selectedChildId) {
+                                toast({
+                                  title: "오류",
+                                  description: "자녀를 선택해주세요",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              const balance = parseFloat(newBalance);
+                              if (isNaN(balance) || balance < 0) {
+                                toast({
+                                  title: "오류",
+                                  description: "올바른 잔액을 입력해주세요",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              if (confirm("정말로 밸리코인 잔액을 수정하시겠습니까?")) {
+                                setBalanceMutation.mutate({
+                                  childId: selectedChildId,
+                                  newBalance: balance,
+                                });
+                              }
+                            }}
+                            disabled={setBalanceMutation.isPending}
+                          >
+                            {setBalanceMutation.isPending ? "처리 중..." : "잔액 수정"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardContent>
               </Card>

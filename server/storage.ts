@@ -37,6 +37,7 @@ export interface IStorage {
   getDeleteRequest(childId: number): Promise<DeleteRequest | undefined>;
   removeDeleteRequest(childId: number): Promise<void>;
   getDeleteRequests(parentId: number): Promise<DeleteRequest[]>;
+  setUserBalance(userId: number, newBalance: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -276,6 +277,17 @@ export class DatabaseStorage implements IStorage {
       .from(deleteRequests)
       .where(eq(deleteRequests.parentId, parentId))
       .orderBy(deleteRequests.createdAt);
+  }
+  async setUserBalance(userId: number, newBalance: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        coinBalance: newBalance.toFixed(2),
+      })
+      .where(eq(users.id, userId));
+
+    const timestamp = new Date().toLocaleString();
+    console.log(`[${timestamp}] 사용자 ${userId}의 코인 잔액이 ${newBalance.toFixed(2)}로 직접 수정되었습니다`);
   }
 }
 
