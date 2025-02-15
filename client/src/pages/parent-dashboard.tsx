@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest, DeleteRequest, Coin } from "@shared/schema";
-import { Coins, Clock, UserX, LogOut, Pencil, Trash } from "lucide-react";
+import { Coins, Clock, UserX, LogOut, Pencil, Trash, TrendingUp, TrendingDown } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
 
 type CoinHistoryItem = Coin & {
@@ -35,7 +36,6 @@ export default function ParentDashboard() {
     enabled: !!user?.id,
   });
 
-  // 각 자녀의 잔액을 조회하는 쿼리 추가
   const childBalances = useQueries({
     queries: (children as any[]).map((child) => ({
       queryKey: [`/api/coins/balance/${child.id}`],
@@ -183,10 +183,13 @@ export default function ParentDashboard() {
 
   if (!user) return null;
 
+  const earnedCoins = coinHistory.filter(coin => parseFloat(coin.amount) > 0);
+  const spentCoins = coinHistory.filter(coin => parseFloat(coin.amount) < 0);
+
+
   return (
     <div className="min-h-screen bg-[#fdf6e3]">
       <div className="flex flex-col">
-        {/* Header */}
         <header className="border-b-4 border-[#b58d3c] bg-[#f9e4bc] shadow-lg">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
@@ -206,11 +209,9 @@ export default function ParentDashboard() {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="container mx-auto px-4 py-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              {/* 자녀 목록과 잔액 표시 */}
               <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg mb-6">
                 <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
                   <div className="flex items-center gap-3">
@@ -351,57 +352,136 @@ export default function ParentDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    {coinHistory.map((coin) => (
-                      <div key={coin.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="text-lg font-bold text-[#5c4a21]">{coin.username}</p>
-                            <p className="text-sm text-[#8b6b35]">{coin.reason}</p>
-                            <p className="text-sm text-[#8b6b35]">
-                              {new Date(coin.createdAt).toLocaleString()}
-                            </p>
+                  <Tabs defaultValue="earned" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-[#f9e4bc] border-2 border-[#b58d3c]">
+                      <TabsTrigger
+                        value="earned"
+                        className="data-[state=active]:bg-[#b58d3c] data-[state=active]:text-white"
+                      >
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          획득 내역
+                        </div>
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="spent"
+                        className="data-[state=active]:bg-[#b58d3c] data-[state=active]:text-white"
+                      >
+                        <div className="flex items-center gap-2">
+                          <TrendingDown className="w-4 h-4" />
+                          사용 내역
+                        </div>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="earned" className="mt-4">
+                      <div className="space-y-4">
+                        {earnedCoins.map((coin) => (
+                          <div key={coin.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-lg font-bold text-[#5c4a21]">{coin.username}</p>
+                                <p className="text-sm text-[#8b6b35]">{coin.reason}</p>
+                                <p className="text-sm text-[#8b6b35]">
+                                  {new Date(coin.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                              <span className="font-bold text-green-700">
+                                +{coin.amount} 밸리코인
+                              </span>
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-1"
+                                onClick={() => {
+                                  setEditingCoin(coin);
+                                  setEditReason(coin.reason);
+                                  setEditAmount(coin.amount);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4" />
+                                수정
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="flex items-center gap-1"
+                                onClick={() => {
+                                  if (confirm("정말로 이 코인 내역을 삭제하시겠습니까?")) {
+                                    deleteCoinMutation.mutate(coin.id);
+                                  }
+                                }}
+                              >
+                                <Trash className="w-4 h-4" />
+                                삭제
+                              </Button>
+                            </div>
                           </div>
-                          <span className={`font-bold ${parseFloat(coin.amount) < 0 ? "text-red-700" : "text-green-700"}`}>
-                            {parseFloat(coin.amount) > 0 ? "+" : ""}{coin.amount} 밸리코인
-                          </span>
-                        </div>
-                        <div className="flex gap-2 mt-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex items-center gap-1"
-                            onClick={() => {
-                              setEditingCoin(coin);
-                              setEditReason(coin.reason);
-                              setEditAmount(coin.amount);
-                            }}
-                          >
-                            <Pencil className="w-4 h-4" />
-                            수정
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="flex items-center gap-1"
-                            onClick={() => {
-                              if (confirm("정말로 이 코인 내역을 삭제하시겠습니까?")) {
-                                deleteCoinMutation.mutate(coin.id);
-                              }
-                            }}
-                          >
-                            <Trash className="w-4 h-4" />
-                            삭제
-                          </Button>
-                        </div>
+                        ))}
+                        {earnedCoins.length === 0 && (
+                          <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
+                            코인 획득 내역이 없습니다
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {coinHistory.length === 0 && (
-                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
-                        코인 내역이 없습니다
+                    </TabsContent>
+
+                    <TabsContent value="spent" className="mt-4">
+                      <div className="space-y-4">
+                        {spentCoins.map((coin) => (
+                          <div key={coin.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <p className="text-lg font-bold text-[#5c4a21]">{coin.username}</p>
+                                <p className="text-sm text-[#8b6b35]">{coin.reason}</p>
+                                <p className="text-sm text-[#8b6b35]">
+                                  {new Date(coin.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                              <span className="font-bold text-red-700">
+                                {coin.amount} 밸리코인
+                              </span>
+                            </div>
+                            <div className="flex gap-2 mt-3">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-1"
+                                onClick={() => {
+                                  setEditingCoin(coin);
+                                  setEditReason(coin.reason);
+                                  setEditAmount(coin.amount);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4" />
+                                수정
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="flex items-center gap-1"
+                                onClick={() => {
+                                  if (confirm("정말로 이 코인 내역을 삭제하시겠습니까?")) {
+                                    deleteCoinMutation.mutate(coin.id);
+                                  }
+                                }}
+                              >
+                                <Trash className="w-4 h-4" />
+                                삭제
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {spentCoins.length === 0 && (
+                          <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
+                            코인 사용 내역이 없습니다
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
 
@@ -523,7 +603,6 @@ export default function ParentDashboard() {
         </main>
       </div>
 
-      {/* Edit Coin Dialog */}
       <Dialog open={!!editingCoin} onOpenChange={(open) => !open && setEditingCoin(null)}>
         <DialogContent className="bg-[#faf1d6] border-4 border-[#b58d3c]">
           <DialogHeader>
