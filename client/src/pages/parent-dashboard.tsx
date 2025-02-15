@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useWebSocket } from "@/hooks/use-websocket";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,6 +16,10 @@ type CoinHistoryItem = Coin & {
   username: string;
 };
 
+type Balance = {
+  balance: string;
+};
+
 export default function ParentDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
@@ -29,6 +33,14 @@ export default function ParentDashboard() {
   const { data: children = [] } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
     enabled: !!user?.id,
+  });
+
+  // 각 자녀의 잔액을 조회하는 쿼리 추가
+  const childBalances = useQueries({
+    queries: (children as any[]).map((child) => ({
+      queryKey: [`/api/coins/balance/${child.id}`],
+      enabled: !!child.id,
+    })),
   });
 
   const { data: requests = [] } = useQuery({
@@ -198,7 +210,41 @@ export default function ParentDashboard() {
         <main className="container mx-auto px-4 py-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg transform hover:scale-[1.02] transition-transform">
+              {/* 자녀 목록과 잔액 표시 */}
+              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg mb-6">
+                <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                  <div className="flex items-center gap-3">
+                    <Coins className="w-8 h-8 text-[#b58d3c]" />
+                    <div>
+                      <CardTitle className="text-2xl text-[#5c4a21]">자녀 목록</CardTitle>
+                      <CardDescription className="text-[#8b6b35]">
+                        자녀들의 현재 밸리코인 잔액을 확인합니다
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    {children.map((child: any, index: number) => (
+                      <div key={child.id} className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-bold text-[#5c4a21]">{child.username}</span>
+                          <span className="font-bold text-[#b58d3c]">
+                            {childBalances[index]?.data?.balance ?? "0.00"} 밸리코인
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {children.length === 0 && (
+                      <div className="text-center py-8 text-[#8b6b35]">
+                        등록된 자녀가 없습니다
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
                 <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
                   <div className="flex items-center gap-3">
                     <Coins className="w-8 h-8 text-[#b58d3c]" />
