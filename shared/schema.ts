@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: ["parent", "child"] }).notNull(),
   parentId: integer("parent_id").references(() => users.id),
+  gameTimeBalance: integer("game_time_balance").default(0),
+  coinBalance: integer("coin_balance").default(0),
 });
 
 export const coins = pgTable("coins", {
@@ -27,6 +29,15 @@ export const gameTimeRequests = pgTable("game_time_requests", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const gameTimePurchases = pgTable("game_time_purchases", {
+  id: serial("id").primaryKey(),
+  childId: integer("child_id").references(() => users.id).notNull(),
+  minutes: integer("minutes").notNull(),
+  coinsSpent: integer("coins_spent").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Schema definitions
 export const insertUserSchema = createInsertSchema(users);
 export const insertCoinSchema = createInsertSchema(coins);
 export const insertGameTimeRequestSchema = createInsertSchema(gameTimeRequests).pick({
@@ -34,11 +45,19 @@ export const insertGameTimeRequestSchema = createInsertSchema(gameTimeRequests).
   parentId: true,
   minutes: true,
 });
+export const insertGameTimePurchaseSchema = createInsertSchema(gameTimePurchases).pick({
+  childId: true,
+  minutes: true,
+  coinsSpent: true,
+});
 
+// Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertCoin = z.infer<typeof insertCoinSchema>;
 export type InsertGameTimeRequest = z.infer<typeof insertGameTimeRequestSchema>;
+export type InsertGameTimePurchase = z.infer<typeof insertGameTimePurchaseSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Coin = typeof coins.$inferSelect;
 export type GameTimeRequest = typeof gameTimeRequests.$inferSelect;
+export type GameTimePurchase = typeof gameTimePurchases.$inferSelect;

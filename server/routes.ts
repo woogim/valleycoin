@@ -83,5 +83,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(request);
   });
 
+  // Game time purchase routes
+  app.post("/api/game-time/purchase", isAuthenticated, async (req, res) => {
+    try {
+      const { minutes, coinsSpent } = req.body;
+      const purchase = await storage.purchaseGameTime(req.user!.id, minutes, coinsSpent);
+      notifyUser(req.user!.id, { type: "GAME_TIME_PURCHASED", purchase });
+      res.json(purchase);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/game-time/balance/:userId", isAuthenticated, async (req, res) => {
+    const balance = await storage.getGameTimeBalance(parseInt(req.params.userId));
+    res.json({ balance });
+  });
+
+  app.get("/api/game-time/purchases/:userId", isAuthenticated, async (req, res) => {
+    const purchases = await storage.getGameTimePurchaseHistory(parseInt(req.params.userId));
+    res.json(purchases);
+  });
+
   return httpServer;
 }

@@ -1,8 +1,8 @@
 import session from "express-session";
-import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest } from "@shared/schema";
+import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
-import { users, coins, gameTimeRequests } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
+import { users, coins, gameTimeRequests, gameTimePurchases } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
 const PostgresSessionStore = connectPg(session);
@@ -26,6 +26,13 @@ export interface IStorage {
   createGameTimeRequest(request: InsertGameTimeRequest): Promise<GameTimeRequest>;
   getGameTimeRequests(parentId: number): Promise<GameTimeRequest[]>;
   updateGameTimeRequest(id: number, status: "approved" | "rejected"): Promise<GameTimeRequest>;
+
+  // New methods
+  updateUserGameTime(userId: number, minutes: number): Promise<void>;
+  updateUserCoins(userId: number, amount: number): Promise<void>;
+  purchaseGameTime(childId: number, minutes: number, coinsSpent: number): Promise<GameTimePurchase>;
+  getGameTimeBalance(userId: number): Promise<number>;
+  getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -114,6 +121,80 @@ export class DatabaseStorage implements IStorage {
       .where(eq(gameTimeRequests.id, id))
       .returning();
     return request;
+  }
+
+  async updateUserGameTime(userId: number, minutes: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        gameTimeBalance: minutes,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserCoins(userId: number, amount: number): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        coinBalance: amount,
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async purchaseGameTime(childId: number, minutes: number, coinsSpent: number): Promise<GameTimePurchase> {
+    const [purchase] = await db.transaction(async (tx) => {
+      // Get current balances
+      const [user] = await tx
+        .select({
+          coinBalance: users.coinBalance,
+          gameTimeBalance: users.gameTimeBalance,
+        })
+        .from(users)
+        .where(eq(users.id, childId));
+
+      if (!user || user.coinBalance < coinsSpent) {
+        throw new Error("Insufficient coins");
+      }
+
+      // Update balances
+      await tx
+        .update(users)
+        .set({
+          coinBalance: user.coinBalance - coinsSpent,
+          gameTimeBalance: user.gameTimeBalance + minutes,
+        })
+        .where(eq(users.id, childId));
+
+      // Record purchase
+      const [purchase] = await tx
+        .insert(gameTimePurchases)
+        .values({
+          childId,
+          minutes,
+          coinsSpent,
+        })
+        .returning();
+
+      return [purchase];
+    });
+
+    return purchase;
+  }
+
+  async getGameTimeBalance(userId: number): Promise<number> {
+    const [user] = await db
+      .select({ gameTimeBalance: users.gameTimeBalance })
+      .from(users)
+      .where(eq(users.id, userId));
+    return user?.gameTimeBalance || 0;
+  }
+
+  async getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]> {
+    return await db
+      .select()
+      .from(gameTimePurchases)
+      .where(eq(gameTimePurchases.childId, userId))
+      .orderBy(gameTimePurchases.createdAt);
   }
 }
 
