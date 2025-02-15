@@ -12,6 +12,9 @@ function isAuthenticated(req: Express.Request, res: Express.Response, next: Expr
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // 타임아웃 설정 증가
+  app.set('timeout', 120000);
+
   setupAuth(app);
 
   // 로깅 미들웨어
@@ -47,37 +50,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer, path: "/ws" });
+
+  // WebSocket 서버 설정 수정
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: "/ws",
+    perMessageDeflate: false, // 압축 비활성화로 성능 향상
+    clientTracking: true, // 클라이언트 추적 활성화
+  });
 
   const clients = new Map<number, WebSocket>();
 
   wss.on("connection", (ws, req) => {
     console.log("[WebSocket] New connection attempt");
+
     if (!req.url) {
       console.log("[WebSocket] No URL provided");
+      ws.close();
       return;
     }
 
     const userId = parseInt(req.url.split("?userId=")[1]);
     if (isNaN(userId)) {
       console.log("[WebSocket] Invalid userId");
+      ws.close();
       return;
     }
 
     console.log(`[WebSocket] Client connected for userId: ${userId}`);
     clients.set(userId, ws);
 
+    // 핑퐁 체크 추가
+    let isAlive = true;
+    ws.on('pong', () => {
+      isAlive = true;
+    });
+
+    // 에러 핸들링 추가
+    ws.on('error', (error) => {
+      console.log(`[WebSocket] Error for userId ${userId}:`, error);
+      clients.delete(userId);
+    });
+
     ws.on("close", () => {
       console.log(`[WebSocket] Client disconnected for userId: ${userId}`);
       clients.delete(userId);
     });
+
+    // 초기 연결 확인 메시지 전송
+    try {
+      ws.send(JSON.stringify({ type: "CONNECTED" }));
+    } catch (error) {
+      console.log(`[WebSocket] Failed to send initial message to userId: ${userId}`);
+    }
+  });
+
+  // 클라이언트 연결 상태 주기적 체크
+  const interval = setInterval(() => {
+    wss.clients.forEach((ws: WebSocket) => {
+      if (!ws) return;
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping(() => {});
+      }
+    });
+  }, 30000);
+
+  wss.on('close', () => {
+    clearInterval(interval);
   });
 
   function notifyUser(userId: number, data: any) {
     const client = clients.get(userId);
     if (client?.readyState === WebSocket.OPEN) {
-      console.log(`[WebSocket] Sending notification to userId: ${userId}`, data);
-      client.send(JSON.stringify(data));
+      try {
+        console.log(`[WebSocket] Sending notification to userId: ${userId}`, data);
+        client.send(JSON.stringify(data));
+      } catch (error) {
+        console.log(`[WebSocket] Failed to send message to userId: ${userId}`, error);
+        clients.delete(userId);
+      }
     } else {
       console.log(`[WebSocket] Client not available for userId: ${userId}`);
     }
