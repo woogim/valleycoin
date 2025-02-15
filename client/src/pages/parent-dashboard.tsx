@@ -343,9 +343,9 @@ export default function ParentDashboard() {
                   <div className="flex items-center gap-3">
                     <Coins className="w-8 h-8 text-[#b58d3c]" />
                     <div>
-                      <CardTitle className="text-2xl text-[#5c4a21]">코인 사용 내역</CardTitle>
+                      <CardTitle className="text-2xl text-[#5c4a21]">코인 내역</CardTitle>
                       <CardDescription className="text-[#8b6b35]">
-                        자녀들의 코인 획득/사용 내역을 관리합니다
+                        자녀들의 코인 내역을 관리합니다
                       </CardDescription>
                     </div>
                   </div>
@@ -359,24 +359,40 @@ export default function ParentDashboard() {
                             <p className="text-lg font-bold text-[#5c4a21]">{coin.username}</p>
                             <p className="text-sm text-[#8b6b35]">{coin.reason}</p>
                             <p className="text-sm text-[#8b6b35]">
-                              {new Date(coin.createdAt).toLocaleString('ko-KR', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
+                              {new Date(coin.createdAt).toLocaleString()}
                             </p>
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className={`font-bold ${parseFloat(coin.amount) < 0 ? "text-red-700" : "text-green-700"} text-lg`}>
-                              {parseFloat(coin.amount) > 0 ? "+" : ""}{coin.amount} 밸리코인
-                            </span>
-                            <span className="text-sm text-[#8b6b35] mt-1">
-                              {parseFloat(coin.amount) < 0 ? "사용" : "획득"}
-                            </span>
-                          </div>
+                          <span className={`font-bold ${parseFloat(coin.amount) < 0 ? "text-red-700" : "text-green-700"}`}>
+                            {parseFloat(coin.amount) > 0 ? "+" : ""}{coin.amount} 밸리코인
+                          </span>
+                        </div>
+                        <div className="flex gap-2 mt-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            onClick={() => {
+                              setEditingCoin(coin);
+                              setEditReason(coin.reason);
+                              setEditAmount(coin.amount);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            onClick={() => {
+                              if (confirm("정말로 이 코인 내역을 삭제하시겠습니까?")) {
+                                deleteCoinMutation.mutate(coin.id);
+                              }
+                            }}
+                          >
+                            <Trash className="w-4 h-4" />
+                            삭제
+                          </Button>
                         </div>
                       </div>
                     ))}
