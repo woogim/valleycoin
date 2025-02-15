@@ -85,7 +85,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addCoins(insertCoin: InsertCoin): Promise<Coin> {
-    const [coin] = await db.insert(coins).values(insertCoin).returning();
+    const [coin] = await db.transaction(async (tx) => {
+      // Insert into coins table
+      const [newCoin] = await tx
+        .insert(coins)
+        .values(insertCoin)
+        .returning();
+
+      // Update user's coin balance
+      const [user] = await tx
+        .select({
+          coinBalance: users.coinBalance,
+        })
+        .from(users)
+        .where(eq(users.id, insertCoin.userId));
+
+      const currentBalance = user?.coinBalance || 0;
+      await tx
+        .update(users)
+        .set({
+          coinBalance: currentBalance + insertCoin.amount,
+        })
+        .where(eq(users.id, insertCoin.userId));
+
+      return [newCoin];
+    });
+
     return coin;
   }
 
