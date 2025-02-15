@@ -60,6 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/coins/balance/:userId", isAuthenticated, async (req, res) => {
     const balance = await storage.getCoinBalance(parseInt(req.params.userId));
+    console.log(`Coin balance for user ${req.params.userId}:`, balance); // Add logging
     res.json({ balance });
   });
 

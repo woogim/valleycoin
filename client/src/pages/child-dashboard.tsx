@@ -5,12 +5,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Coin, GameTimePurchase } from "@shared/schema";
 
 const COINS_PER_MINUTE = 2; // 1분당 2코인
+
+type Balance = {
+  balance: number;
+};
 
 export default function ChildDashboard() {
   const { user, logoutMutation } = useAuth();
@@ -18,22 +21,22 @@ export default function ChildDashboard() {
   const [requestMinutes, setRequestMinutes] = useState("");
   const [purchaseMinutes, setPurchaseMinutes] = useState("");
 
-  const { data: balance } = useQuery({
+  const { data: balance } = useQuery<Balance>({
     queryKey: [`/api/coins/balance/${user?.id}`],
     enabled: !!user?.id,
   });
 
-  const { data: gameTimeBalance } = useQuery({
+  const { data: gameTimeBalance } = useQuery<Balance>({
     queryKey: [`/api/game-time/balance/${user?.id}`],
     enabled: !!user?.id,
   });
 
-  const { data: history } = useQuery({
+  const { data: history } = useQuery<Coin[]>({
     queryKey: [`/api/coins/history/${user?.id}`],
     enabled: !!user?.id,
   });
 
-  const { data: purchases } = useQuery({
+  const { data: purchases } = useQuery<GameTimePurchase[]>({
     queryKey: [`/api/game-time/purchases/${user?.id}`],
     enabled: !!user?.id,
   });
