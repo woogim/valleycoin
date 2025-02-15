@@ -1,0 +1,33 @@
+[vite] connecting...
+DOMException {}
+
+((intermediate value) ?? 0).toFixed is not a function
+((intermediate value) ?? 0).toFixed is not a function
+The above error occurred in the <ChildDashboard> component:
+
+    at ChildDashboard (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/src/pages/child-dashboard.tsx:31:36)
+    at ProtectedRoute (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=5bea8dcb:379:17)
+    at Router
+    at AuthProvider (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/src/hooks/use-auth.tsx:26:32)
+    at QueryClientProvider (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=5bea8dcb:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+
+at ChildDashboard (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/src/pages/child-dashboard.tsx:31:36)
+at ProtectedRoute (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/src/lib/protected-route.tsx:22:3)
+at Switch (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=5bea8dcb:379:17)
+at Router
+at AuthProvider (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/src/hooks/use-auth.tsx:26:32)
+at QueryClientProvider (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=5bea8dcb:2805:3)
+at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+at t.value (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://ff9a439f-b7c6-457a-a37b-714103ee428f-00-3e2j6piisn51x.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+((intermediate value) ?? 0).toFixed is not a function

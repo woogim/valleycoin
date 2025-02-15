@@ -152,7 +152,7 @@ export default function ChildDashboard() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="text-5xl font-bold text-[#b58d3c] text-center mb-4 font-pixel">
-                    {(balance?.balance ?? 0).toFixed(2)} 밸리코인
+                    {parseFloat(balance?.balance ?? "0").toFixed(2)} 밸리코인
                   </div>
                 </CardContent>
               </Card>
@@ -193,7 +193,7 @@ export default function ChildDashboard() {
                               return;
                             }
                             const coinsRequired = days;
-                            if ((balance?.balance ?? 0) < coinsRequired) {
+                            if (parseFloat(balance?.balance ?? "0") < coinsRequired) {
                               toast({
                                 title: "밸리코인 부족",
                                 description: `${coinsRequired.toFixed(2)}밸리코인이 필요합니다`,
@@ -267,8 +267,8 @@ export default function ChildDashboard() {
                         <div key={coin.id} className="flex flex-col bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-[#5c4a21]">{coin.reason}</span>
-                            <span className={`font-bold ${coin.amount > 0 ? "text-green-700" : "text-red-700"}`}>
-                              {coin.amount > 0 ? "+" : ""}{parseFloat(coin.amount).toFixed(2)} 밸리코인
+                            <span className={`font-bold ${parseFloat(coin.amount) > 0 ? "text-green-700" : "text-red-700"}`}>
+                              {parseFloat(coin.amount) > 0 ? "+" : ""}{parseFloat(coin.amount).toFixed(2)} 밸리코인
                             </span>
                           </div>
                           <span className="text-sm text-[#8b6b35] mt-1">
