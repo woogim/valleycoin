@@ -97,21 +97,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Coin management routes
   app.post("/api/coins", isAuthenticated, async (req, res) => {
-    const { userId, amount, reason } = req.body;
-    const coin = await storage.addCoins({ userId, amount, reason });
-    notifyUser(userId, { type: "COIN_UPDATE", coin });
-    res.json(coin);
+    try {
+      const { userId, amount, reason } = req.body;
+      // amount를 decimal로 변환
+      const decimalAmount = parseFloat(amount).toFixed(2);
+      const coin = await storage.addCoins({
+        userId,
+        amount: decimalAmount,
+        reason,
+      });
+      notifyUser(userId, { type: "COIN_UPDATE", coin });
+      res.json(coin);
+    } catch (error) {
+      console.error("Error adding coins:", error);
+      res.status(400).json({ message: "Failed to add coins" });
+    }
   });
 
   app.get("/api/coins/balance/:userId", isAuthenticated, async (req, res) => {
-    const balance = await storage.getCoinBalance(parseInt(req.params.userId));
-    console.log(`Coin balance for user ${req.params.userId}:`, balance);
-    res.json({ balance });
+    try {
+      const balance = await storage.getCoinBalance(parseInt(req.params.userId));
+      console.log(`Coin balance for user ${req.params.userId}:`, balance);
+      // balance를 문자열로 반환
+      res.json({ balance: parseFloat(balance).toFixed(2) });
+    } catch (error) {
+      console.error("Error getting coin balance:", error);
+      res.status(400).json({ message: "Failed to get coin balance" });
+    }
   });
 
   app.get("/api/coins/history/:userId", isAuthenticated, async (req, res) => {
-    const history = await storage.getCoinHistory(parseInt(req.params.userId));
-    res.json(history);
+    try {
+      const history = await storage.getCoinHistory(parseInt(req.params.userId));
+      // amount를 decimal로 변환하여 반환
+      const formattedHistory = history.map(coin => ({
+        ...coin,
+        amount: parseFloat(coin.amount).toFixed(2)
+      }));
+      res.json(formattedHistory);
+    } catch (error) {
+      console.error("Error getting coin history:", error);
+      res.status(400).json({ message: "Failed to get coin history" });
+    }
   });
 
   // Game time request routes
