@@ -139,4 +139,33 @@ export function setupAuth(app: Express) {
     console.log(`[Auth] /api/user successful for user: ${req.user?.username}`);
     res.json(req.user);
   });
+
+  app.post("/api/user/delete", async (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).send("Unauthorized");
+    }
+
+    try {
+      console.log(`[Auth] Delete account attempt for user: ${req.user?.username}`);
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(400).send("Invalid user");
+      }
+
+      await storage.deleteUser(userId);
+
+      req.logout((err) => {
+        if (err) {
+          console.error(`[Auth] Logout error after account deletion:`, err);
+          return next(err);
+        }
+        console.log(`[Auth] Account deleted successfully for user: ${req.user?.username}`);
+        res.sendStatus(200);
+      });
+    } catch (error) {
+      console.error(`[Auth] Account deletion error:`, error);
+      next(error);
+    }
+  });
 }

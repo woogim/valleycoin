@@ -1,7 +1,7 @@
 import session from "express-session";
 import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { users, coins, gameTimeRequests, gameTimePurchases } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
@@ -31,6 +31,7 @@ export interface IStorage {
   updateUserCoins(userId: number, amount: number): Promise<void>;
   purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase>;
   getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]>;
+  deleteUser(userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -207,6 +208,23 @@ export class DatabaseStorage implements IStorage {
       .from(gameTimePurchases)
       .where(eq(gameTimePurchases.childId, userId))
       .orderBy(gameTimePurchases.createdAt);
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete related records first
+      await tx.delete(gameTimePurchases).where(eq(gameTimePurchases.childId, userId));
+      await tx.delete(gameTimeRequests).where(
+        or(
+          eq(gameTimeRequests.childId, userId),
+          eq(gameTimeRequests.parentId, userId)
+        )
+      );
+      await tx.delete(coins).where(eq(coins.userId, userId));
+
+      // Finally delete the user
+      await tx.delete(users).where(eq(users.id, userId));
+    });
   }
 }
 
