@@ -47,6 +47,7 @@ export interface IStorage {
   getDeleteRequest(childId: number): Promise<DeleteRequest | undefined>;
   removeDeleteRequest(childId: number): Promise<void>;
   getDeleteRequests(parentId: number): Promise<DeleteRequest[]>;
+  updateCoinUnit(userId: number, coinUnit: string): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -246,8 +247,7 @@ export class DatabaseStorage implements IStorage {
       );
       await tx.delete(coins).where(eq(coins.userId, userId));
       await tx.delete(deleteRequests).where(eq(deleteRequests.childId, userId));
-      await tx.delete(coinRequests).where(eq(coinRequests.childId, userId)); //added line
-
+      await tx.delete(coinRequests).where(eq(coinRequests.childId, userId));
       // Finally delete the user
       await tx.delete(users).where(eq(users.id, userId));
     });
@@ -508,6 +508,14 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updatedRequest;
+  }
+  async updateCoinUnit(userId: number, coinUnit: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ coinUnit })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 }
 

@@ -439,5 +439,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/user/:userId/coin-unit", isAuthenticated, async (req, res) => {
+    try {
+      const { coinUnit } = req.body;
+      const user = await storage.updateCoinUnit(parseInt(req.params.userId), coinUnit);
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating coin unit:", error);
+      res.status(400).json({ message: "코인 단위 수정에 실패했습니다." });
+    }
+  });
+
   return httpServer;
 }

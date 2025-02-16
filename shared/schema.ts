@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   role: text("role", { enum: ["parent", "child"] }).notNull(),
   parentId: serial("parent_id").references(() => users.id),
   coinBalance: decimal("coin_balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  coinUnit: text("coin_unit").default("밸리코인"),
 });
 
 export const coins = pgTable("coins", {
