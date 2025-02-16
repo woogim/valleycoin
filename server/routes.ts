@@ -13,6 +13,9 @@ function generateCsv(data: any[], headers: string[], headerLabels: string[]): st
       if (header === 'createdAt') {
         value = new Date(value).toLocaleString();
       }
+      if (header === 'amount') {
+        value = parseFloat(value) >= 0 ? `+${value}` : value;
+      }
       return `"${value}"`;
     }).join(',')
   ).join('\n');
