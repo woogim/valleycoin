@@ -292,6 +292,8 @@ export class DatabaseStorage implements IStorage {
   async getParentCoinHistory(childIds: number[]): Promise<(Coin & { username: string })[]> {
     if (!childIds.length) return [];
 
+    const placeholders = childIds.map((_, i) => `$${i + 1}`).join(', ');
+
     const history = await db
       .select({
         id: coins.id,
@@ -303,7 +305,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(coins)
       .leftJoin(users, eq(coins.userId, users.id))
-      .where(sql`${coins.userId} IN (${sql.join(childIds)})`)
+      .where(sql`${coins.userId} IN (${sql.raw(placeholders)})`, ...childIds)
       .orderBy(sql`${coins.createdAt} DESC`);
 
     return history;
