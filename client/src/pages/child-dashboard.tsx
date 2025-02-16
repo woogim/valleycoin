@@ -123,13 +123,15 @@ export default function ChildDashboard() {
 
   if (!user) return null;
 
+  const coinUnit = user.coinUnit || "밸리코인";
+
   return (
     <div className="min-h-screen bg-[#fdf6e3]">
       <div className="flex flex-col">
         <header className="border-b-4 border-[#b58d3c] bg-[#f9e4bc] shadow-lg">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
-              <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
+              <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">{coinUnit} 대시보드</h1>
               <div className="flex gap-2">
                 <SettingsDialog />
                 <Button
@@ -154,9 +156,9 @@ export default function ChildDashboard() {
                     <div className="flex items-center gap-3">
                       <Coins className="w-8 h-8 text-[#b58d3c]" />
                       <div>
-                        <CardTitle className="text-2xl text-[#5c4a21]">보유 밸리코인</CardTitle>
+                        <CardTitle className="text-2xl text-[#5c4a21]">보유 {coinUnit}</CardTitle>
                         <CardDescription className="text-[#8b6b35]">
-                          현재 보유한 밸리코인으로 게임 시간을 구매할 수 있습니다
+                          현재 보유한 {coinUnit}으로 게임 시간을 구매할 수 있습니다
                         </CardDescription>
                       </div>
                     </div>
@@ -173,7 +175,7 @@ export default function ChildDashboard() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <div className="text-5xl font-bold text-[#b58d3c] text-center mb-4 font-pixel">
-                    {balance?.balance ?? "0.00"} 밸리코인
+                    {balance?.balance ?? "0.00"} {coinUnit}
                   </div>
                 </CardContent>
               </Card>
@@ -185,7 +187,7 @@ export default function ChildDashboard() {
                     <div>
                       <CardTitle className="text-2xl text-[#5c4a21]">게임 시간 관리</CardTitle>
                       <CardDescription className="text-[#8b6b35]">
-                        밸리코인으로 게임 시간을 구매하거나 부모님께 요청할 수 있습니다
+                        {coinUnit}으로 게임 시간을 구매하거나 부모님께 요청할 수 있습니다
                       </CardDescription>
                     </div>
                   </div>
@@ -193,7 +195,7 @@ export default function ChildDashboard() {
                 <CardContent className="pt-6">
                   <div className="space-y-6">
                     <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
-                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인으로 구매</h3>
+                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">{coinUnit}으로 구매</h3>
                       <div className="space-y-3">
                         <div className="flex gap-2">
                           <Input
@@ -217,8 +219,8 @@ export default function ChildDashboard() {
                               const coinsRequired = days;
                               if (parseFloat(balance?.balance ?? "0.00") < coinsRequired) {
                                 toast({
-                                  title: "밸리코인 부족",
-                                  description: `${coinsRequired.toFixed(2)} 밸리코인이 필요합니다`,
+                                  title: `${coinUnit} 부족`,
+                                  description: `${coinsRequired.toFixed(2)} ${coinUnit}이 필요합니다`,
                                   variant: "destructive",
                                 });
                                 return;
@@ -228,7 +230,7 @@ export default function ChildDashboard() {
                             disabled={purchaseGameDaysMutation.isPending}
                             className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
                           >
-                            구매 (1밸리코인/일)
+                            구매 (1{coinUnit}/일)
                           </Button>
                         </div>
                         <div className="flex gap-2">
@@ -247,7 +249,7 @@ export default function ChildDashboard() {
                     </div>
 
                     <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
-                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인 요청</h3>
+                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">{coinUnit} 요청</h3>
                       <div className="space-y-3">
                         <Input
                           type="text"
@@ -307,7 +309,7 @@ export default function ChildDashboard() {
                     <div>
                       <CardTitle className="text-2xl text-[#5c4a21]">활동 내역</CardTitle>
                       <CardDescription className="text-[#8b6b35]">
-                        밸리코인 획득/사용 및 게임 시간 구매 내역
+                        {coinUnit} 획득/사용 및 게임 시간 구매 내역
                       </CardDescription>
                     </div>
                   </div>
@@ -325,14 +327,14 @@ export default function ChildDashboard() {
               <CardContent className="pt-6">
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인 내역</h3>
+                    <h3 className="text-lg font-bold text-[#5c4a21] mb-3">{coinUnit} 내역</h3>
                     <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
                       {history?.map((coin: Coin) => (
                         <div key={coin.id} className="flex flex-col bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-[#5c4a21]">{coin.reason}</span>
                             <span className={`font-bold ${coin.amount.startsWith('-') ? "text-red-700" : "text-green-700"}`}>
-                              {!coin.amount.startsWith('-') ? "+" : ""}{coin.amount} 밸리코인
+                              {!coin.amount.startsWith('-') ? "+" : ""}{coin.amount} {coinUnit}
                             </span>
                           </div>
                           <span className="text-sm text-[#8b6b35] mt-1">
@@ -351,7 +353,7 @@ export default function ChildDashboard() {
                           <div className="flex justify-between items-center">
                             <span className="font-bold text-[#5c4a21]">{purchase.days}일 구매</span>
                             <span className="font-bold text-red-700">
-                              -{purchase.coinsSpent} 밸리코인
+                              -{purchase.coinsSpent} {coinUnit}
                             </span>
                           </div>
                           <span className="text-sm text-[#8b6b35] mt-1">
