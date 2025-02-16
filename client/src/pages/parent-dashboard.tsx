@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest, DeleteRequest, Coin } from "@shared/schema";
-import { Coins, Clock, UserX, LogOut, Pencil, Trash, TrendingUp, TrendingDown } from "lucide-react";
+import { Coins, Clock, UserX, LogOut, Pencil, Trash, TrendingUp, TrendingDown, Download } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
 
 type CoinHistoryItem = Coin & {
@@ -246,6 +246,14 @@ export default function ParentDashboard() {
     },
   });
 
+  const downloadCoinHistory = () => {
+    window.location.href = `/api/parent/coins/export/${user?.id}`;
+  };
+
+  const downloadGameTimePurchases = () => {
+    window.location.href = `/api/game-time/export/${user?.id}`;
+  };
+
   if (!user) return null;
 
   const earnedCoins = coinHistory.filter(coin => parseFloat(coin.amount) > 0);
@@ -260,6 +268,15 @@ export default function ParentDashboard() {
             <div className="flex justify-between items-center">
               <h1 className="text-4xl font-bold text-[#5c4a21] font-pixel">밸리코인 대시보드</h1>
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={downloadCoinHistory}
+                  className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                  title="전체 코인 내역 내보내기"
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
                 <SettingsDialog />
                 <Button
                   variant="outline"
@@ -737,7 +754,7 @@ export default function ParentDashboard() {
                             variant="destructive"
                             className="flex-1"
                             onClick={() => {
-                              if (confirm("정말로 자녀의 계정을 삭제하시겠습니까?")) {
+                              if (confirm("정말로 이 자녀의 계정을 삭제하시겠습니까?")) {
                                 approveDeleteRequestMutation.mutate(request.childId);
                               }
                             }}

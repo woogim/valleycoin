@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Coin, GameTimePurchase } from "@shared/schema";
-import { Coins, Clock, History, LogOut } from "lucide-react";
+import { Coins, Clock, History, LogOut, Download } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
 
 type Balance = {
@@ -53,8 +53,8 @@ export default function ChildDashboard() {
     } else if (data.type === "COIN_REQUEST_RESPONSE") {
       toast({
         title: "코인 요청",
-        description: data.request.status === 'approved' 
-          ? `${data.request.approvedAmount} 코인이 승인되었습니다` 
+        description: data.request.status === 'approved'
+          ? `${data.request.approvedAmount} 코인이 승인되었습니다`
           : "요청이 거절되었습니다",
       });
     }
@@ -113,6 +113,14 @@ export default function ChildDashboard() {
     },
   });
 
+  const downloadCoinHistory = () => {
+    window.location.href = `/api/coins/export/${user?.id}`;
+  };
+
+  const downloadGameTimePurchases = () => {
+    window.location.href = `/api/game-time/export/${user?.id}`;
+  };
+
   if (!user) return null;
 
   return (
@@ -142,14 +150,25 @@ export default function ChildDashboard() {
             <div className="space-y-6">
               <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg transform hover:scale-[1.02] transition-transform">
                 <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
-                  <div className="flex items-center gap-3">
-                    <Coins className="w-8 h-8 text-[#b58d3c]" />
-                    <div>
-                      <CardTitle className="text-2xl text-[#5c4a21]">보유 밸리코인</CardTitle>
-                      <CardDescription className="text-[#8b6b35]">
-                        현재 보유한 밸리코인으로 게임 시간을 구매할 수 있습니다
-                      </CardDescription>
+                  <div className="flex items-center gap-3 justify-between">
+                    <div className="flex items-center gap-3">
+                      <Coins className="w-8 h-8 text-[#b58d3c]" />
+                      <div>
+                        <CardTitle className="text-2xl text-[#5c4a21]">보유 밸리코인</CardTitle>
+                        <CardDescription className="text-[#8b6b35]">
+                          현재 보유한 밸리코인으로 게임 시간을 구매할 수 있습니다
+                        </CardDescription>
+                      </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={downloadCoinHistory}
+                      className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                      title="코인 내역 내보내기"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
@@ -282,14 +301,25 @@ export default function ChildDashboard() {
 
             <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
               <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
-                <div className="flex items-center gap-3">
-                  <History className="w-8 h-8 text-[#b58d3c]" />
-                  <div>
-                    <CardTitle className="text-2xl text-[#5c4a21]">활동 내역</CardTitle>
-                    <CardDescription className="text-[#8b6b35]">
-                      밸리코인 획득/사용 및 게임 시간 구매 내역
-                    </CardDescription>
+                <div className="flex items-center gap-3 justify-between">
+                  <div className="flex items-center gap-3">
+                    <History className="w-8 h-8 text-[#b58d3c]" />
+                    <div>
+                      <CardTitle className="text-2xl text-[#5c4a21]">활동 내역</CardTitle>
+                      <CardDescription className="text-[#8b6b35]">
+                        밸리코인 획득/사용 및 게임 시간 구매 내역
+                      </CardDescription>
+                    </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={downloadGameTimePurchases}
+                    className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                    title="게임 시간 구매 내역 내보내기"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">

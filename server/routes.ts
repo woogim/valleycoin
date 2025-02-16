@@ -4,6 +4,21 @@ import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 
+// CSV 내보내기를 위한 유틸리티 함수
+function generateCsv(data: any[], headers: string[], headerLabels: string[]): string {
+  const headerRow = headerLabels.join(',') + '\n';
+  const rows = data.map(item => 
+    headers.map(header => {
+      let value = typeof item[header] === 'string' ? item[header].replace(/,/g, ';') : item[header];
+      if (header === 'createdAt') {
+        value = new Date(value).toLocaleString();
+      }
+      return `"${value}"`;
+    }).join(',')
+  ).join('\n');
+  return headerRow + rows;
+}
+
 function isAuthenticated(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
   if (req.isAuthenticated()) {
     return next();
@@ -361,6 +376,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete request error:", error);
       res.status(400).json({ message: error.message });
+    }
+  });
+
+  // CSV 다운로드 API 추가
+  app.get("/api/coins/export/:userId", isAuthenticated, async (req, res) => {
+    try {
+      const history = await storage.getCoinHistory(parseInt(req.params.userId));
+      const csv = generateCsv(
+        history,
+        ['amount', 'reason', 'createdAt'],
+        ['금액', '사유', '날짜']
+      );
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=coin-history.csv');
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting coin history:", error);
+      res.status(400).json({ message: "내역 내보내기에 실패했습니다." });
+    }
+  });
+
+  app.get("/api/game-time/export/:userId", isAuthenticated, async (req, res) => {
+    try {
+      const purchases = await storage.getGameTimePurchaseHistory(parseInt(req.params.userId));
+      const csv = generateCsv(
+        purchases,
+        ['days', 'coinsSpent', 'createdAt'],
+        ['구매 일수', '사용한 코인', '날짜']
+      );
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=game-time-purchases.csv');
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting game time purchases:", error);
+      res.status(400).json({ message: "구매 내역 내보내기에 실패했습니다." });
+    }
+  });
+
+  app.get("/api/parent/coins/export/:parentId", isAuthenticated, async (req, res) => {
+    try {
+      const children = await storage.getChildren(parseInt(req.params.parentId));
+      const childIds = children.map(child => child.id);
+      const history = await storage.getParentCoinHistory(childIds);
+      const csv = generateCsv(
+        history,
+        ['username', 'amount', 'reason', 'createdAt'],
+        ['자녀 이름', '금액', '사유', '날짜']
+      );
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=children-coin-history.csv');
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting parent coin history:", error);
+      res.status(400).json({ message: "내역 내보내기에 실패했습니다." });
     }
   });
 
