@@ -12,6 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest, DeleteRequest, Coin } from "@shared/schema";
 import { Coins, Clock, UserX, LogOut, Pencil, Trash, TrendingUp, TrendingDown, Download } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
+import { Pencil2Icon } from "@radix-ui/react-icons";
 
 type CoinHistoryItem = Coin & {
   username: string;
@@ -42,6 +43,7 @@ export default function ParentDashboard() {
   const [editReason, setEditReason] = useState("");
   const [editAmount, setEditAmount] = useState("");
   const [approvalAmount, setApprovalAmount] = useState("");
+  const [editingCoinUnit, setEditingCoinUnit] = useState<{ id: number; unit: string } | null>(null);
 
   const { data: children = [] } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
@@ -100,7 +102,7 @@ export default function ParentDashboard() {
   });
 
   const addCoinsMutation = useMutation({
-    mutationFn: async ({ childId, amount, reason }: { childId: number, amount: number, reason: string }) => {
+    mutationFn: async ({ childId, amount, reason }: { childId: number; amount: number; reason: string }) => {
       await apiRequest("POST", "/api/coins", { userId: childId, amount, reason });
     },
     onSuccess: () => {
@@ -121,7 +123,7 @@ export default function ParentDashboard() {
   });
 
   const respondToRequestMutation = useMutation({
-    mutationFn: async ({ requestId, status }: { requestId: number, status: "approved" | "rejected" }) => {
+    mutationFn: async ({ requestId, status }: { requestId: number; status: "approved" | "rejected" }) => {
       await apiRequest("POST", `/api/game-time/respond/${requestId}`, { status });
     },
     onSuccess: () => {
@@ -246,6 +248,28 @@ export default function ParentDashboard() {
     },
   });
 
+  const updateCoinUnitMutation = useMutation({
+    mutationFn: async ({ userId, coinUnit }: { userId: number; coinUnit: string }) => {
+      await apiRequest("POST", `/api/user/${userId}/coin-unit`, { coinUnit });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/children/${user?.id}`] });
+      toast({
+        title: "성공",
+        description: "코인 단위가 수정되었습니다",
+      });
+      setEditingCoinUnit(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+
   const downloadCoinHistory = () => {
     window.location.href = `/api/parent/coins/export/${user?.id}`;
   };
@@ -256,9 +280,8 @@ export default function ParentDashboard() {
 
   if (!user) return null;
 
-  const earnedCoins = coinHistory.filter(coin => parseFloat(coin.amount) > 0);
-  const spentCoins = coinHistory.filter(coin => parseFloat(coin.amount) < 0);
-
+  const earnedCoins = coinHistory.filter((coin) => parseFloat(coin.amount) > 0);
+  const spentCoins = coinHistory.filter((coin) => parseFloat(coin.amount) < 0);
 
   return (
     <div className="min-h-screen bg-[#fdf6e3]">
@@ -312,9 +335,55 @@ export default function ParentDashboard() {
                       <div key={child.id} className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-bold text-[#5c4a21]">{child.username}</span>
-                          <span className="font-bold text-[#b58d3c]">
-                            {childBalances[index]?.data?.balance ?? "0.00"} 밸리코인
-                          </span>
+                          <div className="flex items-center gap-4">
+                            {editingCoinUnit?.id === child.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  className="w-32 border-2 border-[#b58d3c] bg-[#fdf6e3]"
+                                  value={editingCoinUnit.unit}
+                                  onChange={(e) => setEditingCoinUnit({ id: child.id, unit: e.target.value })}
+                                  placeholder="코인 단위"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                                  onClick={() => {
+                                    if (editingCoinUnit.unit.trim()) {
+                                      updateCoinUnitMutation.mutate({
+                                        userId: child.id,
+                                        coinUnit: editingCoinUnit.unit.trim(),
+                                      });
+                                    }
+                                  }}
+                                >
+                                  저장
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                                  onClick={() => setEditingCoinUnit(null)}
+                                >
+                                  취소
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="font-bold text-[#b58d3c]">
+                                  {childBalances[index]?.data?.balance ?? "0.00"} {child.coinUnit || "밸리코인"}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                                  onClick={() => setEditingCoinUnit({ id: child.id, unit: child.coinUnit || "밸리코인" })}
+                                >
+                                  <Pencil2Icon className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -509,7 +578,6 @@ export default function ParentDashboard() {
                   </div>
                 </CardContent>
               </Card>
-
             </div>
 
             <div className="space-y-6">
@@ -693,20 +761,24 @@ export default function ParentDashboard() {
                             <Button
                               variant="default"
                               className="flex-1 bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
-                              onClick={() => respondToRequestMutation.mutate({
-                                requestId: request.id,
-                                status: "approved"
-                              })}
+                              onClick={() =>
+                                respondToRequestMutation.mutate({
+                                  requestId: request.id,
+                                  status: "approved",
+                                })
+                              }
                             >
                               승인
                             </Button>
                             <Button
                               variant="destructive"
                               className="flex-1"
-                              onClick={() => respondToRequestMutation.mutate({
-                                requestId: request.id,
-                                status: "rejected"
-                              })}
+                              onClick={() =>
+                                respondToRequestMutation.mutate({
+                                  requestId: request.id,
+                                  status: "rejected",
+                                })
+                              }
                             >
                               거절
                             </Button>
@@ -765,7 +837,8 @@ export default function ParentDashboard() {
                       </div>
                     ))}
                     {(!deleteRequests || deleteRequests.length === 0) && (
-                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">대기 중인 탈퇴 요청이 없습니다
+                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
+                        대기 중인 탈퇴 요청이 없습니다
                       </div>
                     )}
                   </div>
@@ -801,10 +874,7 @@ export default function ParentDashboard() {
               />
             </div>
             <div className="flex gap-2 justify-end mt-4">
-              <Button
-                variant="outline"
-                onClick={() => setEditingCoin(null)}
-              >
+              <Button variant="outline" onClick={() => setEditingCoin(null)}>
                 취소
               </Button>
               <Button
