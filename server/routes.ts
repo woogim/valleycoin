@@ -258,6 +258,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+  // Add coin request routes
+  app.post("/api/coins/request", isAuthenticated, async (req, res) => {
+    try {
+      const { childId, parentId, requestedAmount, reason } = req.body;
+      const request = await storage.createCoinRequest({
+        childId,
+        parentId,
+        requestedAmount,
+        reason,
+      });
+      notifyUser(parentId, { type: "NEW_COIN_REQUEST", request });
+      res.json(request);
+    } catch (error) {
+      console.error("Error creating coin request:", error);
+      res.status(400).json({ message: "코인 요청 생성에 실패했습니다." });
+    }
+  });
+
+  app.get("/api/coins/requests/:parentId", isAuthenticated, async (req, res) => {
+    try {
+      const requests = await storage.getCoinRequests(parseInt(req.params.parentId));
+      res.json(requests);
+    } catch (error) {
+      console.error("Error getting coin requests:", error);
+      res.status(400).json({ message: "코인 요청 조회에 실패했습니다." });
+    }
+  });
+
+  app.post("/api/coins/request/:requestId/approve", isAuthenticated, async (req, res) => {
+    try {
+      const { approvedAmount } = req.body;
+      const request = await storage.approveCoinRequest(parseInt(req.params.requestId), parseFloat(approvedAmount));
+      notifyUser(request.childId, { type: "COIN_REQUEST_RESPONSE", request });
+      res.json(request);
+    } catch (error) {
+      console.error("Error approving coin request:", error);
+      res.status(400).json({ message: "코인 요청 승인에 실패했습니다." });
+    }
+  });
+
+  app.post("/api/coins/request/:requestId/reject", isAuthenticated, async (req, res) => {
+    try {
+      const request = await storage.rejectCoinRequest(parseInt(req.params.requestId));
+      notifyUser(request.childId, { type: "COIN_REQUEST_RESPONSE", request });
+      res.json(request);
+    } catch (error) {
+      console.error("Error rejecting coin request:", error);
+      res.status(400).json({ message: "코인 요청 거절에 실패했습니다." });
+    }
+  });
+
   // Game time request routes
   app.post("/api/game-time/request", isAuthenticated, async (req, res) => {
     const request = await storage.createGameTimeRequest(req.body);
