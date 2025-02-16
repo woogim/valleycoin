@@ -18,25 +18,31 @@ export default function AuthPage() {
   const [, setLocation] = useLocation();
 
   const registerForm = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(
+      insertUserSchema.extend({
+        parentId: insertUserSchema.shape.parentId.optional(),
+      })
+    ),
     defaultValues: {
       role: "parent",
       username: "",
       password: "",
-    }
+    },
   });
 
-  const { data: parents } = useQuery<User[]>({
+  const { data: parents = [] } = useQuery({
     queryKey: ["/api/parents"],
     enabled: registerForm.watch("role") === "child",
   });
 
   const loginForm = useForm({
-    resolver: zodResolver(insertUserSchema.pick({ username: true, password: true })),
+    resolver: zodResolver(
+      insertUserSchema.pick({ username: true, password: true })
+    ),
     defaultValues: {
       username: "",
       password: "",
-    }
+    },
   });
 
   useEffect(() => {
@@ -44,6 +50,13 @@ export default function AuthPage() {
       setLocation(user.role === "parent" ? "/parent-dashboard" : "/child-dashboard");
     }
   }, [user, setLocation]);
+
+  const onSubmit = async (data: any) => {
+    if (data.role === "child" && !data.parentId) {
+      return;
+    }
+    await registerMutation.mutate(data);
+  };
 
   if (user) {
     return null;
@@ -123,7 +136,7 @@ export default function AuthPage() {
                 </CardHeader>
                 <CardContent>
                   <Form {...registerForm}>
-                    <form onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))} className="space-y-4">
+                    <form onSubmit={registerForm.handleSubmit(onSubmit)} className="space-y-4">
                       <FormField
                         control={registerForm.control}
                         name="username"
@@ -174,7 +187,7 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      {registerForm.watch("role") === "child" && parents && parents.length > 0 && (
+                      {registerForm.watch("role") === "child" && (
                         <FormField
                           control={registerForm.control}
                           name="parentId"

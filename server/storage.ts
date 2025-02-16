@@ -1,7 +1,7 @@
 import session from "express-session";
 import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest, CoinRequest, InsertCoinRequest } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, sql } from "drizzle-orm";
+import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests, coinRequests } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
@@ -292,8 +292,6 @@ export class DatabaseStorage implements IStorage {
   async getParentCoinHistory(childIds: number[]): Promise<(Coin & { username: string })[]> {
     if (!childIds.length) return [];
 
-    const placeholders = childIds.map((_, i) => `$${i + 1}`).join(', ');
-
     const history = await db
       .select({
         id: coins.id,
@@ -305,7 +303,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(coins)
       .leftJoin(users, eq(coins.userId, users.id))
-      .where(sql`${coins.userId} IN (${sql.raw(placeholders)})`, ...childIds)
+      .where(inArray(coins.userId, childIds))
       .orderBy(sql`${coins.createdAt} DESC`);
 
     return history;

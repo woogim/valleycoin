@@ -16,6 +16,7 @@ import { Pencil2Icon } from "@radix-ui/react-icons";
 
 type CoinHistoryItem = Coin & {
   username: string;
+  userId: number;
 };
 
 type CoinRequest = {
@@ -39,6 +40,7 @@ export default function ParentDashboard() {
   const [coinAmount, setCoinAmount] = useState("");
   const [reason, setReason] = useState("");
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
+  const [selectedChildForHistory, setSelectedChildForHistory] = useState<number | null>(null);
   const [editingCoin, setEditingCoin] = useState<Coin | null>(null);
   const [editReason, setEditReason] = useState("");
   const [editAmount, setEditAmount] = useState("");
@@ -280,8 +282,8 @@ export default function ParentDashboard() {
 
   if (!user) return null;
 
-  const earnedCoins = coinHistory.filter((coin) => parseFloat(coin.amount) > 0);
-  const spentCoins = coinHistory.filter((coin) => parseFloat(coin.amount) < 0);
+  const earnedCoins = coinHistory.filter((coin) => (selectedChildForHistory === null || coin.userId === selectedChildForHistory) && parseFloat(coin.amount) > 0);
+  const spentCoins = coinHistory.filter((coin) => (selectedChildForHistory === null || coin.userId === selectedChildForHistory) && parseFloat(coin.amount) < 0);
 
   return (
     <div className="min-h-screen bg-[#fdf6e3]">
@@ -594,6 +596,21 @@ export default function ParentDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-[#5c4a21] mb-2">자녀 선택</label>
+                    <select
+                      className="w-full border-2 border-[#b58d3c] rounded-md p-2 bg-[#fdf6e3] text-[#5c4a21]"
+                      value={selectedChildForHistory || ""}
+                      onChange={(e) => setSelectedChildForHistory(e.target.value ? parseInt(e.target.value) : null)}
+                    >
+                      <option value="">전체 자녀</option>
+                      {children?.map((child: any) => (
+                        <option key={child.id} value={child.id}>
+                          {child.username}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <Tabs defaultValue="earned" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 bg-[#f9e4bc] border-2 border-[#b58d3c]">
                       <TabsTrigger
@@ -629,7 +646,7 @@ export default function ParentDashboard() {
                                 </p>
                               </div>
                               <span className="font-bold text-green-700">
-                                +{coin.amount} 밸리코인
+                                +{coin.amount} {children?.find((c: any) => c.id === coin.userId)?.coinUnit || "밸리코인"}
                               </span>
                             </div>
                             <div className="flex gap-2 mt-3">
@@ -683,7 +700,7 @@ export default function ParentDashboard() {
                                 </p>
                               </div>
                               <span className="font-bold text-red-700">
-                                {coin.amount} 밸리코인
+                                {coin.amount} {children?.find((c: any) => c.id === coin.userId)?.coinUnit || "밸리코인"}
                               </span>
                             </div>
                             <div className="flex gap-2 mt-3">
