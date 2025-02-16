@@ -36,6 +36,11 @@ export default function ChildDashboard() {
     enabled: !!user?.id,
   });
 
+  const addPurchaseDays = (days: number) => {
+    const currentDays = parseFloat(purchaseDays) || 0;
+    setPurchaseDays((currentDays + days).toString());
+  };
+
   useWebSocket((data) => {
     if (data.type === "COIN_UPDATE") {
       queryClient.invalidateQueries({ queryKey: [`/api/coins/balance/${user?.id}`] });
@@ -114,7 +119,6 @@ export default function ChildDashboard() {
   return (
     <div className="min-h-screen bg-[#fdf6e3]">
       <div className="flex flex-col">
-        {/* Header */}
         <header className="border-b-4 border-[#b58d3c] bg-[#f9e4bc] shadow-lg">
           <div className="container mx-auto px-4 py-4">
             <div className="flex justify-between items-center">
@@ -134,7 +138,6 @@ export default function ChildDashboard() {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="container mx-auto px-4 py-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-6">
@@ -173,41 +176,55 @@ export default function ChildDashboard() {
                   <div className="space-y-6">
                     <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
                       <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인으로 구매</h3>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          value={purchaseDays}
-                          onChange={(e) => setPurchaseDays(e.target.value)}
-                          placeholder="일"
-                          className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
-                        />
-                        <Button
-                          onClick={() => {
-                            const days = parseFloat(purchaseDays);
-                            if (isNaN(days) || days <= 0) {
-                              toast({
-                                title: "잘못된 입력",
-                                description: "올바른 일수를 입력해주세요",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            const coinsRequired = days;
-                            if (parseFloat(balance?.balance ?? "0.00") < coinsRequired) {
-                              toast({
-                                title: "밸리코인 부족",
-                                description: `${coinsRequired.toFixed(2)} 밸리코인이 필요합니다`,
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            purchaseGameDaysMutation.mutate(days);
-                          }}
-                          disabled={purchaseGameDaysMutation.isPending}
-                          className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
-                        >
-                          구매 (1밸리코인/일)
-                        </Button>
+                      <div className="space-y-3">
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            value={purchaseDays}
+                            onChange={(e) => setPurchaseDays(e.target.value)}
+                            placeholder="일"
+                            className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
+                          />
+                          <Button
+                            onClick={() => {
+                              const days = parseFloat(purchaseDays);
+                              if (isNaN(days) || days <= 0) {
+                                toast({
+                                  title: "잘못된 입력",
+                                  description: "올바른 일수를 입력해주세요",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              const coinsRequired = days;
+                              if (parseFloat(balance?.balance ?? "0.00") < coinsRequired) {
+                                toast({
+                                  title: "밸리코인 부족",
+                                  description: `${coinsRequired.toFixed(2)} 밸리코인이 필요합니다`,
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              purchaseGameDaysMutation.mutate(days);
+                            }}
+                            disabled={purchaseGameDaysMutation.isPending}
+                            className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
+                          >
+                            구매 (1밸리코인/일)
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          {[1, 2, 3].map((days) => (
+                            <Button
+                              key={days}
+                              variant="outline"
+                              onClick={() => addPurchaseDays(days)}
+                              className="flex-1 border-2 border-[#b58d3c] hover:bg-[#f0d499] font-bold"
+                            >
+                              +{days}일
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
