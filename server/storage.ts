@@ -146,7 +146,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(coins)
       .where(eq(coins.userId, userId))
-      .orderBy(coins.createdAt);
+      .orderBy(sql`${coins.createdAt} DESC`);
   }
 
   async createGameTimeRequest(insertRequest: InsertGameTimeRequest): Promise<GameTimeRequest> {
@@ -231,7 +231,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(gameTimePurchases)
       .where(eq(gameTimePurchases.childId, userId))
-      .orderBy(gameTimePurchases.createdAt);
+      .orderBy(sql`${gameTimePurchases.createdAt} DESC`);
   }
 
   async deleteUser(userId: number): Promise<void> {
