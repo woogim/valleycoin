@@ -17,6 +17,17 @@ type CoinHistoryItem = Coin & {
   username: string;
 };
 
+type CoinRequest = {
+  id: number;
+  childId: number;
+  requestedAmount: string;
+  approvedAmount: string | null;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  username: string;
+};
+
 type Balance = {
   balance: string;
 };
@@ -30,6 +41,7 @@ export default function ParentDashboard() {
   const [editingCoin, setEditingCoin] = useState<Coin | null>(null);
   const [editReason, setEditReason] = useState("");
   const [editAmount, setEditAmount] = useState("");
+  const [approvalAmount, setApprovalAmount] = useState("");
 
   const { data: children = [] } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
@@ -58,6 +70,11 @@ export default function ParentDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: coinRequests = [] } = useQuery<CoinRequest[]>({
+    queryKey: [`/api/coins/requests/${user?.id}`],
+    enabled: !!user?.id,
+  });
+
   useWebSocket((data) => {
     if (data.type === "NEW_GAME_TIME_REQUEST") {
       queryClient.invalidateQueries({ queryKey: [`/api/game-time/requests/${user?.id}`] });
@@ -73,6 +90,12 @@ export default function ParentDashboard() {
       });
     } else if (data.type === "COIN_UPDATE") {
       queryClient.invalidateQueries({ queryKey: [`/api/coins/parent-history/${user?.id}`] });
+    } else if (data.type === "NEW_COIN_REQUEST") {
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/requests/${user?.id}`] });
+      toast({
+        title: "새로운 코인 요청",
+        description: "자녀가 코인을 요청했습니다",
+      });
     }
   });
 
@@ -170,6 +193,48 @@ export default function ParentDashboard() {
       toast({
         title: "성공",
         description: "코인 내역이 삭제되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const approveCoinRequestMutation = useMutation({
+    mutationFn: async ({ requestId, approvedAmount }: { requestId: number; approvedAmount: number }) => {
+      await apiRequest("POST", `/api/coins/request/${requestId}/approve`, { approvedAmount: approvedAmount.toFixed(2) });
+    },
+    onSuccess: () => {
+      setApprovalAmount("");
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/requests/${user?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/parent-history/${user?.id}`] });
+      toast({
+        title: "성공",
+        description: "코인 요청이 승인되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const rejectCoinRequestMutation = useMutation({
+    mutationFn: async (requestId: number) => {
+      await apiRequest("POST", `/api/coins/request/${requestId}/reject`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/coins/requests/${user?.id}`] });
+      toast({
+        title: "성공",
+        description: "코인 요청이 거절되었습니다",
       });
     },
     onError: (error: Error) => {
@@ -336,6 +401,98 @@ export default function ParentDashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+
+              <Card className="border-4 border-[#b58d3c] bg-[#faf1d6] shadow-lg">
+                <CardHeader className="bg-[#f0d499] border-b-4 border-[#b58d3c]">
+                  <div className="flex items-center gap-3">
+                    <Coins className="w-8 h-8 text-[#b58d3c]" />
+                    <div>
+                      <CardTitle className="text-2xl text-[#5c4a21]">코인 요청</CardTitle>
+                      <CardDescription className="text-[#8b6b35]">
+                        자녀의 코인 요청을 관리합니다
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    {coinRequests?.map((request) => (
+                      <div key={request.id} className="bg-[#f9e4bc] rounded-lg p-4 border-2 border-[#b58d3c]">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <p className="text-lg font-bold text-[#5c4a21]">{request.username}님의 요청</p>
+                            <p className="text-sm text-[#8b6b35]">{request.reason}</p>
+                            <p className="text-sm text-[#8b6b35]">
+                              요청 시간: {new Date(request.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                          <span className="px-3 py-1 text-sm font-bold rounded-full bg-[#b58d3c] text-white">
+                            {request.requestedAmount} 코인 요청
+                          </span>
+                        </div>
+                        {request.status === "pending" && (
+                          <div className="space-y-3">
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder={`지급할 코인 수량 (최대: ${request.requestedAmount})`}
+                                value={approvalAmount}
+                                onChange={(e) => setApprovalAmount(e.target.value)}
+                                className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
+                              />
+                              <Button
+                                variant="default"
+                                className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
+                                onClick={() => {
+                                  const amount = parseFloat(approvalAmount);
+                                  if (isNaN(amount) || amount <= 0) {
+                                    toast({
+                                      title: "오류",
+                                      description: "올바른 코인 수량을 입력해주세요",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  approveCoinRequestMutation.mutate({
+                                    requestId: request.id,
+                                    approvedAmount: amount,
+                                  });
+                                }}
+                              >
+                                승인
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={() => rejectCoinRequestMutation.mutate(request.id)}
+                              >
+                                거절
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        {request.status === "approved" && (
+                          <p className="text-sm font-bold text-green-600 mt-2">
+                            승인됨: {request.approvedAmount} 코인 지급
+                          </p>
+                        )}
+                        {request.status === "rejected" && (
+                          <p className="text-sm font-bold text-red-600 mt-2">
+                            요청이 거절되었습니다
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                    {(!coinRequests || coinRequests.length === 0) && (
+                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
+                        대기 중인 코인 요청이 없습니다
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
             </div>
 
             <div className="space-y-6">
@@ -591,8 +748,7 @@ export default function ParentDashboard() {
                       </div>
                     ))}
                     {(!deleteRequests || deleteRequests.length === 0) && (
-                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">
-                        대기 중인 탈퇴 요청이 없습니다
+                      <div className="text-center py-8 text-[#8b6b35] bg-[#f9e4bc] rounded-lg border-2 border-[#b58d3c]">대기 중인 탈퇴 요청이 없습니다
                       </div>
                     )}
                   </div>

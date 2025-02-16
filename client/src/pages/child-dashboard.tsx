@@ -18,8 +18,9 @@ type Balance = {
 export default function ChildDashboard() {
   const { user, logoutMutation } = useAuth();
   const { toast } = useToast();
-  const [requestDays, setRequestDays] = useState("");
   const [purchaseDays, setPurchaseDays] = useState("");
+  const [coinRequestAmount, setCoinRequestAmount] = useState("");
+  const [coinRequestReason, setCoinRequestReason] = useState("");
 
   const { data: balance } = useQuery<Balance>({
     queryKey: [`/api/coins/balance/${user?.id}`],
@@ -49,16 +50,12 @@ export default function ChildDashboard() {
         title: "코인 업데이트",
         description: `${data.coin.amount} 코인이 ${data.coin.amount > 0 ? "추가" : "차감"}되었습니다`,
       });
-    } else if (data.type === "GAME_TIME_RESPONSE") {
+    } else if (data.type === "COIN_REQUEST_RESPONSE") {
       toast({
-        title: "게임 일수 요청",
-        description: `요청이 ${data.request.status === 'approved' ? '승인' : '거절'}되었습니다`,
-      });
-    } else if (data.type === "GAME_TIME_PURCHASED") {
-      queryClient.invalidateQueries({ queryKey: [`/api/game-time/purchases/${user?.id}`] });
-      toast({
-        title: "게임 일수 구매",
-        description: `${data.purchase.days}일의 게임을 구매했습니다`,
+        title: "코인 요청",
+        description: data.request.status === 'approved' 
+          ? `${data.request.approvedAmount} 코인이 승인되었습니다` 
+          : "요청이 거절되었습니다",
       });
     }
   });
@@ -87,22 +84,24 @@ export default function ChildDashboard() {
     },
   });
 
-  const requestGameDaysMutation = useMutation({
-    mutationFn: async (days: number) => {
+  const requestCoinsMutation = useMutation({
+    mutationFn: async () => {
       if (!user?.id || !user?.parentId) {
         throw new Error("부모 정보가 없습니다");
       }
-      await apiRequest("POST", "/api/game-time/request", {
+      await apiRequest("POST", "/api/coins/request", {
         childId: user.id,
         parentId: user.parentId,
-        days,
+        requestedAmount: parseFloat(coinRequestAmount),
+        reason: coinRequestReason,
       });
     },
     onSuccess: () => {
-      setRequestDays("");
+      setCoinRequestAmount("");
+      setCoinRequestReason("");
       toast({
         title: "성공",
-        description: "게임 일수 요청이 전송되었습니다",
+        description: "코인 요청이 전송되었습니다",
       });
     },
     onError: (error: Error) => {
@@ -229,33 +228,51 @@ export default function ChildDashboard() {
                     </div>
 
                     <div className="bg-[#f9e4bc] p-4 rounded-lg border-2 border-[#b58d3c]">
-                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">부모님께 요청</h3>
-                      <div className="flex gap-2">
+                      <h3 className="text-lg font-bold text-[#5c4a21] mb-3">밸리코인 요청</h3>
+                      <div className="space-y-3">
                         <Input
-                          type="number"
-                          value={requestDays}
-                          onChange={(e) => setRequestDays(e.target.value)}
-                          placeholder="일"
-                          className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
+                          type="text"
+                          value={coinRequestReason}
+                          onChange={(e) => setCoinRequestReason(e.target.value)}
+                          placeholder="어떤 일을 했는지 설명해주세요 (예: 책 30분 읽기 완료)"
+                          className="border-2 border-[#b58d3c] bg-[#fdf6e3]"
                         />
-                        <Button
-                          onClick={() => {
-                            const days = parseInt(requestDays);
-                            if (isNaN(days) || days <= 0) {
-                              toast({
-                                title: "잘못된 입력",
-                                description: "올바른 일수를 입력해주세요",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-                            requestGameDaysMutation.mutate(days);
-                          }}
-                          disabled={requestGameDaysMutation.isPending || !user?.parentId}
-                          className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
-                        >
-                          요청하기
-                        </Button>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={coinRequestAmount}
+                            onChange={(e) => setCoinRequestAmount(e.target.value)}
+                            placeholder="받고 싶은 코인 수량"
+                            className="flex-1 border-2 border-[#b58d3c] bg-[#fdf6e3]"
+                          />
+                          <Button
+                            onClick={() => {
+                              const amount = parseFloat(coinRequestAmount);
+                              if (isNaN(amount) || amount <= 0) {
+                                toast({
+                                  title: "잘못된 입력",
+                                  description: "올바른 코인 수량을 입력해주세요",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              if (!coinRequestReason) {
+                                toast({
+                                  title: "잘못된 입력",
+                                  description: "어떤 일을 했는지 설명해주세요",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              requestCoinsMutation.mutate();
+                            }}
+                            disabled={requestCoinsMutation.isPending}
+                            className="bg-[#b58d3c] hover:bg-[#8b6b35] text-white font-bold"
+                          >
+                            요청하기
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>

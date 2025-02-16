@@ -1,8 +1,8 @@
 import session from "express-session";
-import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest } from "@shared/schema";
+import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest, CoinRequest, InsertCoinRequest } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, sql } from "drizzle-orm";
-import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests } from "@shared/schema";
+import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests, coinRequests } from "@shared/schema";
 import connectPg from "connect-pg-simple";
 
 const PostgresSessionStore = connectPg(session);
@@ -26,12 +26,18 @@ export interface IStorage {
   getCoin(coinId: number): Promise<Coin>;
   deleteCoin(coinId: number): Promise<void>;
 
+  // Coin request operations
+  createCoinRequest(request: InsertCoinRequest): Promise<CoinRequest>;
+  getCoinRequests(parentId: number): Promise<(CoinRequest & { username: string })[]>;
+  approveCoinRequest(requestId: number, approvedAmount: number): Promise<CoinRequest>;
+  rejectCoinRequest(requestId: number): Promise<CoinRequest>;
+
   // Game time operations
   createGameTimeRequest(request: InsertGameTimeRequest): Promise<GameTimeRequest>;
   getGameTimeRequests(parentId: number): Promise<GameTimeRequest[]>;
   updateGameTimeRequest(id: number, status: "approved" | "rejected"): Promise<GameTimeRequest>;
 
-  // New methods
+  // Other operations
   updateUserCoins(userId: number, amount: number): Promise<void>;
   purchaseGameDays(childId: number, days: number, coinsSpent: number): Promise<GameTimePurchase>;
   getGameTimePurchaseHistory(userId: number): Promise<GameTimePurchase[]>;
@@ -240,6 +246,7 @@ export class DatabaseStorage implements IStorage {
       );
       await tx.delete(coins).where(eq(coins.userId, userId));
       await tx.delete(deleteRequests).where(eq(deleteRequests.childId, userId));
+      await tx.delete(coinRequests).where(eq(coinRequests.childId, userId)); //added line
 
       // Finally delete the user
       await tx.delete(users).where(eq(users.id, userId));
@@ -402,6 +409,105 @@ export class DatabaseStorage implements IStorage {
         .delete(coins)
         .where(eq(coins.id, coinId));
     });
+  }
+
+  async createCoinRequest(insertRequest: InsertCoinRequest): Promise<CoinRequest> {
+    const [request] = await db
+      .insert(coinRequests)
+      .values({ ...insertRequest, status: "pending" })
+      .returning();
+    return request;
+  }
+
+  async getCoinRequests(parentId: number): Promise<(CoinRequest & { username: string })[]> {
+    const requests = await db
+      .select({
+        id: coinRequests.id,
+        childId: coinRequests.childId,
+        parentId: coinRequests.parentId,
+        requestedAmount: coinRequests.requestedAmount,
+        approvedAmount: coinRequests.approvedAmount,
+        reason: coinRequests.reason,
+        status: coinRequests.status,
+        createdAt: coinRequests.createdAt,
+        username: users.username,
+      })
+      .from(coinRequests)
+      .leftJoin(users, eq(coinRequests.childId, users.id))
+      .where(eq(coinRequests.parentId, parentId))
+      .orderBy(sql`${coinRequests.createdAt} DESC`);
+
+    return requests;
+  }
+
+  async approveCoinRequest(requestId: number, approvedAmount: number): Promise<CoinRequest> {
+    return await db.transaction(async (tx) => {
+      const [request] = await tx
+        .select()
+        .from(coinRequests)
+        .where(eq(coinRequests.id, requestId));
+
+      if (!request) {
+        throw new Error("요청을 찾을 수 없습니다");
+      }
+
+      if (request.status !== "pending") {
+        throw new Error("이미 처리된 요청입니다");
+      }
+
+      // Update request status and approved amount
+      const [updatedRequest] = await tx
+        .update(coinRequests)
+        .set({
+          status: "approved",
+          approvedAmount: approvedAmount.toFixed(2),
+        })
+        .where(eq(coinRequests.id, requestId))
+        .returning();
+
+      // Add coins to child's balance
+      await tx
+        .insert(coins)
+        .values({
+          userId: request.childId,
+          amount: approvedAmount.toFixed(2),
+          reason: request.reason,
+        });
+
+      const [user] = await tx
+        .select({
+          coinBalance: users.coinBalance,
+        })
+        .from(users)
+        .where(eq(users.id, request.childId));
+
+      const currentBalance = parseFloat(user?.coinBalance?.toString() || "0");
+      await tx
+        .update(users)
+        .set({
+          coinBalance: (currentBalance + approvedAmount).toFixed(2),
+        })
+        .where(eq(users.id, request.childId));
+
+      const timestamp = new Date().toLocaleString();
+      console.log(`[${timestamp}] 코인 요청 승인: 사용자 ${request.childId}에게 ${approvedAmount}코인 지급 (사유: ${request.reason})`);
+
+      return updatedRequest;
+    });
+  }
+
+  async rejectCoinRequest(requestId: number): Promise<CoinRequest> {
+    const [updatedRequest] = await db
+      .update(coinRequests)
+      .set({ status: "rejected" })
+      .where(eq(coinRequests.id, requestId))
+      .returning();
+
+    if (!updatedRequest) {
+      throw new Error("요청을 찾을 수 없습니다");
+    }
+
+    return updatedRequest;
   }
 }
 
