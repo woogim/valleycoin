@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { GameTimeRequest, DeleteRequest, Coin } from "@shared/schema";
-import { Coins, Clock, UserX, LogOut, Pencil, Trash, TrendingUp, TrendingDown, Download } from "lucide-react";
+import { Coins, Clock, UserX, LogOut, Pencil, Trash, TrendingUp, TrendingDown, Download, UserPlus, Copy } from "lucide-react";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { Pencil2Icon } from "@radix-ui/react-icons";
 
@@ -46,6 +46,8 @@ export default function ParentDashboard() {
   const [editAmount, setEditAmount] = useState("");
   const [approvalAmount, setApprovalAmount] = useState("");
   const [editingCoinUnit, setEditingCoinUnit] = useState<{ id: number; unit: string } | null>(null);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
 
   const { data: children = [] } = useQuery({
     queryKey: [`/api/children/${user?.id}`],
@@ -272,6 +274,36 @@ export default function ParentDashboard() {
   });
 
 
+  const createInvitationMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/invitations");
+      return response;
+    },
+    onSuccess: (data) => {
+      setInviteLink(data.inviteLink);
+      setShowInviteDialog(true);
+      toast({
+        title: "성공",
+        description: "초대 링크가 생성되었습니다",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "오류",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const copyInviteLink = () => {
+    navigator.clipboard.writeText(inviteLink);
+    toast({
+      title: "복사 완료",
+      description: "초대 링크가 클립보드에 복사되었습니다",
+    });
+  };
+
   const downloadCoinHistory = () => {
     window.location.href = `/api/parent/coins/export/${user?.id}`;
   };
@@ -296,6 +328,15 @@ export default function ParentDashboard() {
                 <Button
                   variant="outline"
                   size="icon"
+                  onClick={() => createInvitationMutation.mutate()}
+                  className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+                  title="자녀 초대 링크 생성"
+                >
+                  <UserPlus className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
                   onClick={downloadCoinHistory}
                   className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
                   title="전체 코인 내역 내보내기"
@@ -315,6 +356,33 @@ export default function ParentDashboard() {
             </div>
           </div>
         </header>
+
+        <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+          <DialogContent className="bg-[#faf1d6] border-4 border-[#b58d3c]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-[#5c4a21]">자녀 초대 링크</DialogTitle>
+            </DialogHeader>
+            <div className="flex gap-2 items-center">
+              <Input
+                value={inviteLink}
+                readOnly
+                className="flex-1 bg-[#fdf6e3] border-2 border-[#b58d3c]"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={copyInviteLink}
+                className="border-2 border-[#b58d3c] hover:bg-[#f0d499]"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-sm text-[#8b6b35]">
+              이 링크를 자녀에게 공유하여 계정을 생성하도록 하세요.
+              링크는 7일간 유효합니다.
+            </p>
+          </DialogContent>
+        </Dialog>
 
         <main className="container mx-auto px-4 py-6">
           <div className="grid md:grid-cols-2 gap-6">
