@@ -1,4 +1,4 @@
-import { pgTable, text, serial, decimal, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, decimal, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,22 +7,14 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role", { enum: ["parent", "child"] }).notNull(),
-  parentId: integer("parent_id").references(() => users.id),
+  parentId: serial("parent_id").references(() => users.id),
   coinBalance: decimal("coin_balance", { precision: 10, scale: 2 }).notNull().default("0"),
   coinUnit: text("coin_unit").default("밸리코인"),
 });
 
-export const invitations = pgTable("invitations", {
-  id: serial("id").primaryKey(),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at"),
-});
-
 export const coins = pgTable("coins", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id).notNull(),
+  userId: serial("user_id").references(() => users.id).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   reason: text("reason").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -30,8 +22,8 @@ export const coins = pgTable("coins", {
 
 export const coinRequests = pgTable("coin_requests", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  parentId: serial("parent_id").references(() => users.id).notNull(),
   requestedAmount: decimal("requested_amount", { precision: 10, scale: 2 }).notNull(),
   approvedAmount: decimal("approved_amount", { precision: 10, scale: 2 }),
   reason: text("reason").notNull(),
@@ -41,25 +33,25 @@ export const coinRequests = pgTable("coin_requests", {
 
 export const gameTimeRequests = pgTable("game_time_requests", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id),
-  days: integer("days").notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  parentId: serial("parent_id").references(() => users.id),
+  days: serial("days").notNull(),
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const gameTimePurchases = pgTable("game_time_purchases", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  days: integer("days").notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  days: serial("days").notNull(),
   coinsSpent: decimal("coins_spent", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const deleteRequests = pgTable("delete_requests", {
   id: serial("id").primaryKey(),
-  childId: integer("child_id").references(() => users.id).notNull(),
-  parentId: integer("parent_id").references(() => users.id).notNull(),
+  childId: serial("child_id").references(() => users.id).notNull(),
+  parentId: serial("parent_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -86,9 +78,6 @@ export const insertDeleteRequestSchema = createInsertSchema(deleteRequests).pick
   childId: true,
   parentId: true,
 });
-export const insertInvitationSchema = createInsertSchema(invitations).pick({
-  parentId: true,
-});
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -97,7 +86,6 @@ export type InsertCoinRequest = z.infer<typeof insertCoinRequestSchema>;
 export type InsertGameTimeRequest = z.infer<typeof insertGameTimeRequestSchema>;
 export type InsertGameTimePurchase = z.infer<typeof insertGameTimePurchaseSchema>;
 export type InsertDeleteRequest = z.infer<typeof insertDeleteRequestSchema>;
-export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Coin = typeof coins.$inferSelect;
@@ -105,4 +93,3 @@ export type CoinRequest = typeof coinRequests.$inferSelect;
 export type GameTimeRequest = typeof gameTimeRequests.$inferSelect;
 export type GameTimePurchase = typeof gameTimePurchases.$inferSelect;
 export type DeleteRequest = typeof deleteRequests.$inferSelect;
-export type Invitation = typeof invitations.$inferSelect;

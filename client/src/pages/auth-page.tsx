@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/hooks/use-auth";
-import { useLocation, useRoute } from "wouter";
+import { useLocation } from "wouter";
 import { insertUserSchema, type User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,30 +12,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import chickenImage from "@/assets/Stardew Valley Chicken.jpg";
-import { useToast } from "@/hooks/use-toast";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
-  const [, params] = useRoute("/auth?:invite");
-  const { toast } = useToast();
-
-  const { data: invitation } = useQuery({
-    queryKey: ["/api/invitations", params?.invite],
-    enabled: !!params?.invite,
-  });
 
   const registerForm = useForm({
     resolver: zodResolver(
       insertUserSchema.extend({
-        role: insertUserSchema.shape.role,
+        parentId: insertUserSchema.shape.parentId.optional(),
       })
     ),
     defaultValues: {
-      role: params?.invite ? "child" : "parent",
+      role: "parent",
       username: "",
       password: "",
     },
+  });
+
+  const { data: parents = [] } = useQuery({
+    queryKey: ["/api/parents"],
+    enabled: registerForm.watch("role") === "child",
   });
 
   const loginForm = useForm({
@@ -55,19 +52,10 @@ export default function AuthPage() {
   }, [user, setLocation]);
 
   const onSubmit = async (data: any) => {
-    if (params?.invite && !invitation?.parentId) {
-      toast({
-        title: "유효하지 않은 초대 링크",
-        description: "올바른 초대 링크를 사용해주세요.",
-        variant: "destructive",
-      });
+    if (data.role === "child" && !data.parentId) {
       return;
     }
-
-    await registerMutation.mutate({
-      ...data,
-      parentId: invitation?.parentId,
-    });
+    await registerMutation.mutate(data);
   };
 
   if (user) {
@@ -175,24 +163,52 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
-                      {!params?.invite && (
+                      <FormField
+                        control={registerForm.control}
+                        name="role"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>회원 유형</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="회원 유형을 선택하세요" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="parent">부모님</SelectItem>
+                                <SelectItem value="child">자녀</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {registerForm.watch("role") === "child" && (
                         <FormField
                           control={registerForm.control}
-                          name="role"
+                          name="parentId"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>회원 유형</FormLabel>
+                              <FormLabel>부모님 계정</FormLabel>
                               <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                defaultValue={field.value?.toString()}
                               >
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="회원 유형을 선택하세요" />
+                                    <SelectValue placeholder="부모님 계정을 선택하세요" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="parent">부모님</SelectItem>
+                                  {parents.map((parent) => (
+                                    <SelectItem key={parent.id} value={parent.id.toString()}>
+                                      {parent.username}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -203,11 +219,6 @@ export default function AuthPage() {
                       <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
                         {registerMutation.isPending ? "계정 생성 중..." : "계정 생성"}
                       </Button>
-                      {params?.invite && !invitation?.parentId && (
-                        <p className="text-sm text-destructive text-center mt-2">
-                          유효하지 않은 초대 링크입니다.
-                        </p>
-                      )}
                     </form>
                   </Form>
                 </CardContent>

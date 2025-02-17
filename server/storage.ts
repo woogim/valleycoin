@@ -1,10 +1,9 @@
 import session from "express-session";
-import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest, CoinRequest, InsertCoinRequest, Invitation } from "@shared/schema";
+import { User, InsertUser, Coin, InsertCoin, GameTimeRequest, InsertGameTimeRequest, GameTimePurchase, DeleteRequest, CoinRequest, InsertCoinRequest } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, sql, inArray } from "drizzle-orm";
-import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests, coinRequests, invitations } from "@shared/schema";
+import { users, coins, gameTimeRequests, gameTimePurchases, deleteRequests, coinRequests } from "@shared/schema";
 import connectPg from "connect-pg-simple";
-import { nanoid } from 'nanoid';
 
 const PostgresSessionStore = connectPg(session);
 
@@ -49,11 +48,6 @@ export interface IStorage {
   removeDeleteRequest(childId: number): Promise<void>;
   getDeleteRequests(parentId: number): Promise<DeleteRequest[]>;
   updateCoinUnit(userId: number, coinUnit: string): Promise<User>;
-
-  // Invitation operations
-  createInvitation(parentId: number): Promise<Invitation>;
-  getInvitationByToken(token: string): Promise<Invitation | undefined>;
-  deleteInvitation(token: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -522,33 +516,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
-  }
-
-  async createInvitation(parentId: number): Promise<Invitation> {
-    const token = nanoid(32); // 충분히 긴 랜덤 토큰 생성
-    const [invitation] = await db
-      .insert(invitations)
-      .values({
-        parentId,
-        token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7일 후 만료
-      })
-      .returning();
-    return invitation;
-  }
-
-  async getInvitationByToken(token: string): Promise<Invitation | undefined> {
-    const [invitation] = await db
-      .select()
-      .from(invitations)
-      .where(eq(invitations.token, token));
-    return invitation;
-  }
-
-  async deleteInvitation(token: string): Promise<void> {
-    await db
-      .delete(invitations)
-      .where(eq(invitations.token, token));
   }
 }
 

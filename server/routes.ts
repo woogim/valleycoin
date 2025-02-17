@@ -7,7 +7,7 @@ import { storage } from "./storage";
 // CSV 내보내기를 위한 유틸리티 함수
 function generateCsv(data: any[], headers: string[], headerLabels: string[]): string {
   const headerRow = headerLabels.join(',') + '\n';
-  const rows = data.map(item =>
+  const rows = data.map(item => 
     headers.map(header => {
       let value = typeof item[header] === 'string' ? item[header].replace(/,/g, ';') : item[header];
       if (header === 'createdAt') {
@@ -70,8 +70,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // WebSocket 서버 설정 수정
-  const wss = new WebSocketServer({
-    server: httpServer,
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
     path: "/ws",
     perMessageDeflate: false, // 압축 비활성화로 성능 향상
     clientTracking: true, // 클라이언트 추적 활성화
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!ws) return;
 
       if (ws.readyState === WebSocket.OPEN) {
-        ws.ping(() => { });
+        ws.ping(() => {});
       }
     });
   }, 30000);
@@ -447,37 +447,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating coin unit:", error);
       res.status(400).json({ message: "코인 단위 수정에 실패했습니다." });
-    }
-  });
-
-  // 초대 링크 생성 API
-  app.post("/api/invitations", isAuthenticated, async (req, res) => {
-    try {
-      const invitation = await storage.createInvitation(req.user!.id);
-      res.json({
-        inviteLink: `${req.protocol}://${req.get('host')}/auth?invite=${invitation.token}`,
-        token: invitation.token
-      });
-    } catch (error) {
-      console.error("Error creating invitation:", error);
-      res.status(400).json({ message: "초대 링크 생성에 실패했습니다." });
-    }
-  });
-
-  // 초대 링크 검증 API
-  app.get("/api/invitations/:token", async (req, res) => {
-    try {
-      const invitation = await storage.getInvitationByToken(req.params.token);
-      if (!invitation) {
-        return res.status(404).json({ message: "유효하지 않은 초대 링크입니다." });
-      }
-      if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
-        return res.status(400).json({ message: "만료된 초대 링크입니다." });
-      }
-      res.json({ parentId: invitation.parentId });
-    } catch (error) {
-      console.error("Error validating invitation:", error);
-      res.status(400).json({ message: "초대 링크 검증에 실패했습니다." });
     }
   });
 
