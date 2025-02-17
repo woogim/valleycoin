@@ -12,6 +12,14 @@ export const users = pgTable("users", {
   coinUnit: text("coin_unit").default("밸리코인"),
 });
 
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  parentId: serial("parent_id").references(() => users.id).notNull(),
+  token: text("token").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+});
+
 export const coins = pgTable("coins", {
   id: serial("id").primaryKey(),
   userId: serial("user_id").references(() => users.id).notNull(),
@@ -78,6 +86,9 @@ export const insertDeleteRequestSchema = createInsertSchema(deleteRequests).pick
   childId: true,
   parentId: true,
 });
+export const insertInvitationSchema = createInsertSchema(invitations).pick({
+  parentId: true,
+});
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -86,6 +97,7 @@ export type InsertCoinRequest = z.infer<typeof insertCoinRequestSchema>;
 export type InsertGameTimeRequest = z.infer<typeof insertGameTimeRequestSchema>;
 export type InsertGameTimePurchase = z.infer<typeof insertGameTimePurchaseSchema>;
 export type InsertDeleteRequest = z.infer<typeof insertDeleteRequestSchema>;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Coin = typeof coins.$inferSelect;
@@ -93,3 +105,4 @@ export type CoinRequest = typeof coinRequests.$inferSelect;
 export type GameTimeRequest = typeof gameTimeRequests.$inferSelect;
 export type GameTimePurchase = typeof gameTimePurchases.$inferSelect;
 export type DeleteRequest = typeof deleteRequests.$inferSelect;
+export type Invitation = typeof invitations.$inferSelect;
