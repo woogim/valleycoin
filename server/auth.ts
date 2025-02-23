@@ -35,7 +35,6 @@ export function setupAuth(app: Express) {
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      secure: true, // Always secure in production and development for better security
       maxAge: 1000 * 60 * 60 * 24 * 7, // 7일
       httpOnly: true,
       sameSite: "lax"
