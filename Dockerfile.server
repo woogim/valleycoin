@@ -1,0 +1,22 @@
+# Dockerfile.server
+FROM node:18-alpine
+
+# Git 설치
+RUN apk add --no-cache git
+
+WORKDIR /app
+
+# 소스코드를 복사하는 대신 Git에서 클론
+# (이미 context가 git repo이므로 실제로는 이 과정이 필요 없습니다)
+# COPY로 컨텍스트의 파일들이 자동으로 복사됩니다
+
+# 의존성 설치 및 빌드
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+EXPOSE 5000
+
+CMD ["npm", "run", "start"]
